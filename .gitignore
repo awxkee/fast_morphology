@@ -2,3 +2,6 @@
 /converted.png
 /converted_opencv.png
 /converted_rgb.png
+.idea
+target
+app/target
