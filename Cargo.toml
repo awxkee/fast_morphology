@@ -1,0 +1,22 @@
+workspace = { members = ["app"] }
+
+[package]
+name = "fast_morphology"
+version = "0.1.0"
+edition = "2021"
+description = "Fast morphology for images"
+readme = "README.md"
+keywords = ["morph", "morphology", "dilate", "erode"]
+license = "Apache-2.0 OR BSD-3-Clause"
+authors = ["Radzivon Bartoshyk"]
+documentation = "https://github.com/awxkee/fast_morphology.git"
+categories = ["multimedia::images"]
+homepage = "https://github.com/awxkee/fast_morphology.git"
+repository = "https://github.com/awxkee/fast_morphology.git"
+exclude = ["*.jpg", "*.png"]
+
+[dependencies]
+colorutils-rs = {path = "../../RustroverProjects/colorutils-rs"}
+nalgebra = "0.33.0"
+num-traits = "0.2.19"
+rayon = "1.10.0"
