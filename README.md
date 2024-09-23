@@ -18,7 +18,9 @@ dilate_rgb(
 ).unwrap();
 ```
 
-# Results
+## Results
+
+Here is some examply bokeh effect
 
 <p float="left">
     <img src="https://github.com/awxkee/fast_morphology/blob/master/assets/fruits.jpg?raw=true" width="273" height="409">
