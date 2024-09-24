@@ -29,25 +29,26 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
-use crate::ops::neon::fast_morph_op_1d_neon;
+use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
+use crate::ops::sse::op::make_morph_op_1d_sse;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
-#[cfg(target_arch = "aarch64")]
-use std::arch::aarch64::*;
-#[cfg(target_arch = "arm")]
-use std::arch::arm::*;
-use crate::se_scan::ScanPoint;
+#[cfg(target_arch = "x86")]
+use std::arch::x86::*;
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
 
 #[derive(Clone)]
-pub struct MorphOpFilterNeon2D4Rows<const OP_TYPE: u8> {}
+pub struct MorphOpFilterSse2D4Rows<const OP_TYPE: u8> {}
 
-impl<const OP_TYPE: u8> Default for MorphOpFilterNeon2D4Rows<OP_TYPE> {
+impl<const OP_TYPE: u8> Default for MorphOpFilterSse2D4Rows<OP_TYPE> {
     fn default() -> Self {
-        MorphOpFilterNeon2D4Rows {}
+        MorphOpFilterSse2D4Rows {}
     }
 }
 
-impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_TYPE> {
+impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2D4Rows<OP_TYPE> {
+    #[target_feature(enable = "sse4.1")]
     unsafe fn dispatch_row(
         &self,
         src: &[u8],
@@ -62,24 +63,14 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
         let op_type: MorphOp = OP_TYPE.into();
         let stride = width;
 
-        let decision_16 = match op_type {
-            MorphOp::Dilate => vmaxq_u8,
-            MorphOp::Erode => vminq_u8,
-        };
-
-        let decision_8 = match op_type {
-            MorphOp::Dilate => vmax_u8,
-            MorphOp::Erode => vmin_u8,
+        let decision = match op_type {
+            MorphOp::Dilate => _mm_max_epu8,
+            MorphOp::Erode => _mm_min_epu8,
         };
 
         let across_vec_decision = match op_type {
-            MorphOp::Dilate => vmaxv_u8,
-            MorphOp::Erode => vminv_u8,
-        };
-
-        let across_vec_decision_f = match op_type {
-            MorphOp::Dilate => vmaxvq_u8,
-            MorphOp::Erode => vminvq_u8,
+            MorphOp::Dilate => _mm_hmax_epu8,
+            MorphOp::Erode => _mm_hmin_epu8,
         };
 
         let base_val = match op_type {
@@ -87,8 +78,29 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
             MorphOp::Erode => u8::MAX,
         };
 
+        let upper_fix = _mm_set_epi8(
+            base_val as i8,
+            base_val as i8,
+            base_val as i8,
+            base_val as i8,
+            base_val as i8,
+            base_val as i8,
+            base_val as i8,
+            base_val as i8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        );
+
         if let Some(arena) = arena {
             let src = &arena.arena;
+
+            let morph_vec_op = make_morph_op_1d_sse::<OP_TYPE>();
 
             let dx = arena.pad_w as i32;
             let dy = arena.pad_h as i32;
@@ -100,21 +112,14 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
             let mut items4 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
             let mut items5 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
 
-            let d_size = ScanPoint::new(dx, dy);
-            let filter_bounds = analyzed_se
-                .left_front
-                .filter_bounds
-                .iter()
-                .map(|&x| x + d_size)
-                .collect::<Vec<_>>();
-
             for x in 0..width {
+                let filter_bounds = &analyzed_se.left_front.filter_bounds;
 
                 let mut index_iter = 0usize;
 
                 for &filter in filter_bounds.iter() {
-                    let filter_start_x = (filter.x + x as i32) as usize;
-                    let filter_start_y = (filter.y + y as i32) as usize;
+                    let filter_start_x = (filter.x + x as i32 + dx) as usize;
+                    let filter_start_y = (filter.y + y as i32 + dy) as usize;
 
                     let filter_size = filter.size as usize;
 
@@ -136,24 +141,24 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
                         let base_offset_4 = py4 + px;
                         let base_offset_5 = py5 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld1q_u8(current0.as_ptr());
+                        let new_value0 = _mm_loadu_si128(current0.as_ptr() as *const __m128i);
                         let current1 = src.get_unchecked(base_offset_1..);
-                        let new_value1 = vld1q_u8(current1.as_ptr());
+                        let new_value1 = _mm_loadu_si128(current1.as_ptr() as *const __m128i);
                         let current2 = src.get_unchecked(base_offset_2..);
-                        let new_value2 = vld1q_u8(current2.as_ptr());
+                        let new_value2 = _mm_loadu_si128(current2.as_ptr() as *const __m128i);
                         let current3 = src.get_unchecked(base_offset_3..);
-                        let new_value3 = vld1q_u8(current3.as_ptr());
+                        let new_value3 = _mm_loadu_si128(current3.as_ptr() as *const __m128i);
                         let current4 = src.get_unchecked(base_offset_4..);
-                        let new_value4 = vld1q_u8(current4.as_ptr());
+                        let new_value4 = _mm_loadu_si128(current4.as_ptr() as *const __m128i);
                         let current5 = src.get_unchecked(base_offset_5..);
-                        let new_value5 = vld1q_u8(current5.as_ptr());
+                        let new_value5 = _mm_loadu_si128(current5.as_ptr() as *const __m128i);
 
-                        *items0.get_unchecked_mut(index_iter) = across_vec_decision_f(new_value0);
-                        *items1.get_unchecked_mut(index_iter) = across_vec_decision_f(new_value1);
-                        *items2.get_unchecked_mut(index_iter) = across_vec_decision_f(new_value2);
-                        *items3.get_unchecked_mut(index_iter) = across_vec_decision_f(new_value3);
-                        *items4.get_unchecked_mut(index_iter) = across_vec_decision_f(new_value4);
-                        *items5.get_unchecked_mut(index_iter) = across_vec_decision_f(new_value5);
+                        *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
+                        *items1.get_unchecked_mut(index_iter) = across_vec_decision(new_value1);
+                        *items2.get_unchecked_mut(index_iter) = across_vec_decision(new_value2);
+                        *items3.get_unchecked_mut(index_iter) = across_vec_decision(new_value3);
+                        *items4.get_unchecked_mut(index_iter) = across_vec_decision(new_value4);
+                        *items5.get_unchecked_mut(index_iter) = across_vec_decision(new_value5);
 
                         index_iter += 1;
 
@@ -169,17 +174,17 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
                         let base_offset_4 = py4 + px;
                         let base_offset_5 = py5 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld1_u8(current0.as_ptr());
+                        let new_value0 = _mm_or_si128(_mm_loadu_si64(current0.as_ptr()), upper_fix);
                         let current1 = src.get_unchecked(base_offset_1..);
-                        let new_value1 = vld1_u8(current1.as_ptr());
+                        let new_value1 = _mm_or_si128(_mm_loadu_si64(current1.as_ptr()), upper_fix);
                         let current2 = src.get_unchecked(base_offset_2..);
-                        let new_value2 = vld1_u8(current2.as_ptr());
+                        let new_value2 = _mm_or_si128(_mm_loadu_si64(current2.as_ptr()), upper_fix);
                         let current3 = src.get_unchecked(base_offset_3..);
-                        let new_value3 = vld1_u8(current3.as_ptr());
+                        let new_value3 = _mm_or_si128(_mm_loadu_si64(current3.as_ptr()), upper_fix);
                         let current4 = src.get_unchecked(base_offset_4..);
-                        let new_value4 = vld1_u8(current4.as_ptr());
+                        let new_value4 = _mm_or_si128(_mm_loadu_si64(current4.as_ptr()), upper_fix);
                         let current5 = src.get_unchecked(base_offset_5..);
-                        let new_value5 = vld1_u8(current5.as_ptr());
+                        let new_value5 = _mm_or_si128(_mm_loadu_si64(current5.as_ptr()), upper_fix);
 
                         *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
                         *items1.get_unchecked_mut(index_iter) = across_vec_decision(new_value1);
@@ -208,30 +213,30 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
                         let current3 = src.get_unchecked(base_offset_3..);
                         let current4 = src.get_unchecked(base_offset_4..);
                         let current5 = src.get_unchecked(base_offset_5..);
-                        let new_value0 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current0.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value1 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current1.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value2 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current2.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value3 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current3.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value4 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current4.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value5 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current5.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
+                        let new_value0 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current0.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value1 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current1.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value2 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current2.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value3 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current3.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value4 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current4.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value5 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current5.as_ptr() as *const i32).read_unaligned(),
+                        );
 
                         *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
                         *items1.get_unchecked_mut(index_iter) = across_vec_decision(new_value1);
@@ -273,29 +278,17 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
                 }
 
                 let ptr0 = (dst.slice.as_ptr() as *mut u8).add(y * stride + x);
-                ptr0.write_unaligned(fast_morph_op_1d_neon::<OP_TYPE>(
-                    items0.get_unchecked(..index_iter),
-                ));
+                ptr0.write_unaligned(morph_vec_op(items0.get_unchecked(..index_iter)));
                 let ptr1 = (dst.slice.as_ptr() as *mut u8).add((y + 1) * stride + x);
-                ptr1.write_unaligned(fast_morph_op_1d_neon::<OP_TYPE>(
-                    items1.get_unchecked(..index_iter),
-                ));
+                ptr1.write_unaligned(morph_vec_op(items1.get_unchecked(..index_iter)));
                 let ptr2 = (dst.slice.as_ptr() as *mut u8).add((y + 2) * stride + x);
-                ptr2.write_unaligned(fast_morph_op_1d_neon::<OP_TYPE>(
-                    items2.get_unchecked(..index_iter),
-                ));
+                ptr2.write_unaligned(morph_vec_op(items2.get_unchecked(..index_iter)));
                 let ptr3 = (dst.slice.as_ptr() as *mut u8).add((y + 3) * stride + x);
-                ptr3.write_unaligned(fast_morph_op_1d_neon::<OP_TYPE>(
-                    items3.get_unchecked(..index_iter),
-                ));
+                ptr3.write_unaligned(morph_vec_op(items3.get_unchecked(..index_iter)));
                 let ptr4 = (dst.slice.as_ptr() as *mut u8).add((y + 4) * stride + x);
-                ptr4.write_unaligned(fast_morph_op_1d_neon::<OP_TYPE>(
-                    items4.get_unchecked(..index_iter),
-                ));
+                ptr4.write_unaligned(morph_vec_op(items4.get_unchecked(..index_iter)));
                 let ptr5 = (dst.slice.as_ptr() as *mut u8).add((y + 5) * stride + x);
-                ptr5.write_unaligned(fast_morph_op_1d_neon::<OP_TYPE>(
-                    items5.get_unchecked(..index_iter),
-                ));
+                ptr5.write_unaligned(morph_vec_op(items5.get_unchecked(..index_iter)));
             }
         } else {
             let max_width = width as i32 - 1;
@@ -335,12 +328,12 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
 
                     let mut current_x = 0usize;
 
-                    let mut values_16_0 = vdupq_n_u8(value0);
-                    let mut values_16_1 = vdupq_n_u8(value1);
-                    let mut values_16_2 = vdupq_n_u8(value2);
-                    let mut values_16_3 = vdupq_n_u8(value3);
-                    let mut values_16_4 = vdupq_n_u8(value4);
-                    let mut values_16_5 = vdupq_n_u8(value4);
+                    let mut values_0 = _mm_set1_epi8(value0 as i8);
+                    let mut values_1 = _mm_set1_epi8(value1 as i8);
+                    let mut values_2 = _mm_set1_epi8(value2 as i8);
+                    let mut values_3 = _mm_set1_epi8(value3 as i8);
+                    let mut values_4 = _mm_set1_epi8(value4 as i8);
+                    let mut values_5 = _mm_set1_epi8(value4 as i8);
 
                     while current_x + 16 < filter_size && filter_start_x + current_x as i32 > 0 {
                         let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;
@@ -351,40 +344,27 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
                         let base_offset_4 = py4 + px;
                         let base_offset_5 = py5 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld1q_u8(current0.as_ptr());
+                        let new_value0 = _mm_loadu_si128(current0.as_ptr() as *const __m128i);
                         let current1 = src.get_unchecked(base_offset_1..);
-                        let new_value1 = vld1q_u8(current1.as_ptr());
+                        let new_value1 = _mm_loadu_si128(current1.as_ptr() as *const __m128i);
                         let current2 = src.get_unchecked(base_offset_2..);
-                        let new_value2 = vld1q_u8(current2.as_ptr());
+                        let new_value2 = _mm_loadu_si128(current2.as_ptr() as *const __m128i);
                         let current3 = src.get_unchecked(base_offset_3..);
-                        let new_value3 = vld1q_u8(current3.as_ptr());
+                        let new_value3 = _mm_loadu_si128(current3.as_ptr() as *const __m128i);
                         let current4 = src.get_unchecked(base_offset_4..);
-                        let new_value4 = vld1q_u8(current4.as_ptr());
+                        let new_value4 = _mm_loadu_si128(current4.as_ptr() as *const __m128i);
                         let current5 = src.get_unchecked(base_offset_5..);
-                        let new_value5 = vld1q_u8(current5.as_ptr());
+                        let new_value5 = _mm_loadu_si128(current5.as_ptr() as *const __m128i);
 
-                        values_16_0 = decision_16(new_value0, values_16_0);
-                        values_16_1 = decision_16(new_value1, values_16_1);
-                        values_16_2 = decision_16(new_value2, values_16_2);
-                        values_16_3 = decision_16(new_value3, values_16_3);
-                        values_16_4 = decision_16(new_value4, values_16_4);
-                        values_16_5 = decision_16(new_value5, values_16_5);
+                        values_0 = decision(new_value0, values_0);
+                        values_1 = decision(new_value1, values_1);
+                        values_2 = decision(new_value2, values_2);
+                        values_3 = decision(new_value3, values_3);
+                        values_4 = decision(new_value4, values_4);
+                        values_5 = decision(new_value5, values_5);
 
                         current_x += 16;
                     }
-
-                    let mut values0 =
-                        decision_8(vget_low_u8(values_16_0), vget_high_u8(values_16_0));
-                    let mut values1 =
-                        decision_8(vget_low_u8(values_16_1), vget_high_u8(values_16_1));
-                    let mut values2 =
-                        decision_8(vget_low_u8(values_16_2), vget_high_u8(values_16_2));
-                    let mut values3 =
-                        decision_8(vget_low_u8(values_16_3), vget_high_u8(values_16_3));
-                    let mut values4 =
-                        decision_8(vget_low_u8(values_16_4), vget_high_u8(values_16_4));
-                    let mut values5 =
-                        decision_8(vget_low_u8(values_16_5), vget_high_u8(values_16_5));
 
                     while current_x + 8 < filter_size && filter_start_x + current_x as i32 > 0 {
                         let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;
@@ -395,24 +375,24 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
                         let base_offset_4 = py4 + px;
                         let base_offset_5 = py5 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld1_u8(current0.as_ptr());
+                        let new_value0 = _mm_or_si128(_mm_loadu_si64(current0.as_ptr()), upper_fix);
                         let current1 = src.get_unchecked(base_offset_1..);
-                        let new_value1 = vld1_u8(current1.as_ptr());
+                        let new_value1 = _mm_or_si128(_mm_loadu_si64(current1.as_ptr()), upper_fix);
                         let current2 = src.get_unchecked(base_offset_2..);
-                        let new_value2 = vld1_u8(current2.as_ptr());
+                        let new_value2 = _mm_or_si128(_mm_loadu_si64(current2.as_ptr()), upper_fix);
                         let current3 = src.get_unchecked(base_offset_3..);
-                        let new_value3 = vld1_u8(current3.as_ptr());
+                        let new_value3 = _mm_or_si128(_mm_loadu_si64(current3.as_ptr()), upper_fix);
                         let current4 = src.get_unchecked(base_offset_4..);
-                        let new_value4 = vld1_u8(current4.as_ptr());
+                        let new_value4 = _mm_or_si128(_mm_loadu_si64(current4.as_ptr()), upper_fix);
                         let current5 = src.get_unchecked(base_offset_5..);
-                        let new_value5 = vld1_u8(current5.as_ptr());
+                        let new_value5 = _mm_or_si128(_mm_loadu_si64(current5.as_ptr()), upper_fix);
 
-                        values0 = decision_8(new_value0, values0);
-                        values1 = decision_8(new_value1, values1);
-                        values2 = decision_8(new_value2, values2);
-                        values3 = decision_8(new_value3, values3);
-                        values4 = decision_8(new_value4, values4);
-                        values5 = decision_8(new_value5, values5);
+                        values_0 = decision(new_value0, values_0);
+                        values_1 = decision(new_value1, values_1);
+                        values_2 = decision(new_value2, values_2);
+                        values_3 = decision(new_value3, values_3);
+                        values_4 = decision(new_value4, values_4);
+                        values_5 = decision(new_value5, values_5);
 
                         current_x += 8;
                     }
@@ -432,47 +412,47 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2D4Rows<OP_T
                         let current3 = src.get_unchecked(base_offset_3..);
                         let current4 = src.get_unchecked(base_offset_4..);
                         let current5 = src.get_unchecked(base_offset_5..);
-                        let new_value0 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current0.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value1 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current1.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value2 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current2.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value3 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current3.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value4 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current4.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
-                        let new_value5 = vreinterpret_u8_u32(vset_lane_u32::<0>(
-                            (current5.as_ptr() as *const u32).read_unaligned(),
-                            vreinterpret_u32_u8(vdup_n_u8(base_val)),
-                        ));
+                        let new_value0 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current0.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value1 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current1.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value2 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current2.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value3 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current3.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value4 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current4.as_ptr() as *const i32).read_unaligned(),
+                        );
+                        let new_value5 = _mm_insert_epi32::<0>(
+                            _mm_set1_epi8(base_val as i8),
+                            (current5.as_ptr() as *const i32).read_unaligned(),
+                        );
 
-                        values0 = decision_8(new_value0, values0);
-                        values1 = decision_8(new_value1, values1);
-                        values2 = decision_8(new_value2, values2);
-                        values3 = decision_8(new_value3, values3);
-                        values4 = decision_8(new_value4, values4);
-                        values5 = decision_8(new_value5, values5);
+                        values_0 = decision(new_value0, values_0);
+                        values_1 = decision(new_value1, values_1);
+                        values_2 = decision(new_value2, values_2);
+                        values_3 = decision(new_value3, values_3);
+                        values_4 = decision(new_value4, values_4);
+                        values_5 = decision(new_value5, values_5);
 
                         current_x += 4;
                     }
 
-                    value0 = across_vec_decision(values0);
-                    value1 = across_vec_decision(values1);
-                    value2 = across_vec_decision(values2);
-                    value3 = across_vec_decision(values3);
-                    value4 = across_vec_decision(values4);
-                    value5 = across_vec_decision(values5);
+                    value0 = across_vec_decision(values_0);
+                    value1 = across_vec_decision(values_1);
+                    value2 = across_vec_decision(values_2);
+                    value3 = across_vec_decision(values_3);
+                    value4 = across_vec_decision(values_4);
+                    value5 = across_vec_decision(values_5);
 
                     while current_x < filter_size {
                         let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;

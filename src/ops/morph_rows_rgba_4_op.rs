@@ -32,8 +32,8 @@ use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_4d;
 use crate::ops::utils::{rgba_from_slice, write_rgba_to_slice};
 use crate::unsafe_slice::UnsafeSlice;
-use colorutils_rs::Rgba;
 use crate::ImageSize;
+use colorutils_rs::Rgba;
 
 #[derive(Clone)]
 pub struct MorphOpFilterRgba2D4Rows<const OP_TYPE: u8> {}

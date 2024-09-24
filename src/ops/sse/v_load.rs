@@ -33,6 +33,77 @@ use std::arch::x86_64::*;
 
 #[inline]
 #[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_deinterleave_rgb(ptr: *const u8) -> (__m128i, __m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let row1 = _mm_loadu_si128(ptr.add(16) as *const __m128i);
+    let row2 = _mm_loadu_si128(ptr.add(32) as *const __m128i);
+    _mm_deinterleave_rgb(row0, row1, row2)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_deinterleave_rgba(ptr: *const u8) -> (__m128i, __m128i, __m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let row1 = _mm_loadu_si128(ptr.add(16) as *const __m128i);
+    let row2 = _mm_loadu_si128(ptr.add(32) as *const __m128i);
+    let row3 = _mm_loadu_si128(ptr.add(48) as *const __m128i);
+    _mm_deinterleave_rgba(row0, row1, row2, row3)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_deinterleave_half_rgba(
+    ptr: *const u8,
+    fill: u8,
+) -> (__m128i, __m128i, __m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let row1 = _mm_loadu_si128(ptr.add(16) as *const __m128i);
+    let v_fill = _mm_set1_epi8(fill as i8);
+    _mm_deinterleave_rgba(row0, row1, v_fill, v_fill)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_deinterleave_quart_rgba(
+    ptr: *const u8,
+    fill: u8,
+) -> (__m128i, __m128i, __m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let v_fill = _mm_set1_epi8(fill as i8);
+    _mm_deinterleave_rgba(row0, v_fill, v_fill, v_fill)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_deinterleave_half_rgb(
+    ptr: *const u8,
+    fill: u8,
+) -> (__m128i, __m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let upper_fix = _mm_set_epi8(
+        fill as i8, fill as i8, fill as i8, fill as i8, fill as i8, fill as i8, fill as i8,
+        fill as i8, 0, 0, 0, 0, 0, 0, 0, 0,
+    );
+    let row1 = _mm_or_si128(_mm_loadu_si64(ptr.add(16)), upper_fix);
+    let row2 = _mm_set1_epi8(fill as i8);
+    _mm_deinterleave_rgb(row0, row1, row2)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_deinterleave_quart_rgb(
+    ptr: *const u8,
+    fill: u8,
+) -> (__m128i, __m128i, __m128i) {
+    let mut row0 = _mm_loadu_si64(ptr);
+    let loaded_val = (ptr.add(8) as *mut u32).read_unaligned();
+    row0 = _mm_insert_epi32::<2>(row0, loaded_val as i32);
+    let def = _mm_set1_epi8(fill as i8);
+    _mm_deinterleave_rgb(row0, def, def)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
 pub unsafe fn _mm_deinterleave_rgb(
     rgb0: __m128i,
     rgb1: __m128i,

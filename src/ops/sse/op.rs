@@ -27,6 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::op_type::MorphOp;
+use crate::ops::avx::{fast_morph_op_1d_avx, fast_morph_op_3d_avx, fast_morph_op_4d_avx};
 use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
 use crate::ops::sse::v_load::{_mm_deinterleave_rgb, _mm_deinterleave_rgba};
 use colorutils_rs::{Rgb, Rgba};
@@ -41,13 +42,23 @@ pub fn fast_morph_op_1d_sse<const OP_TYPE: u8>(slice: &[u8]) -> u8 {
 }
 
 #[inline]
+pub fn make_morph_op_1d_sse<const OP_TYPE: u8>() -> unsafe fn(&[u8]) -> u8 {
+    let mut _dispatch: unsafe fn(&[u8]) -> u8 = fast_morph_op_1d_sse_impl::<OP_TYPE>;
+    if std::arch::is_x86_feature_detected!("avx2") {
+        _dispatch = fast_morph_op_1d_avx::<OP_TYPE>;
+    }
+    _dispatch
+}
+
+#[inline]
 #[target_feature(enable = "sse4.1")]
 unsafe fn fast_morph_op_1d_sse_del<const OP_TYPE: u8>(slice: &[u8]) -> u8 {
     fast_morph_op_1d_sse_impl::<OP_TYPE>(slice)
 }
 
 #[inline]
-fn fast_morph_op_1d_sse_impl<const OP_TYPE: u8>(slice: &[u8]) -> u8 {
+#[target_feature(enable = "sse4.1")]
+unsafe fn fast_morph_op_1d_sse_impl<const OP_TYPE: u8>(slice: &[u8]) -> u8 {
     unsafe {
         let op_type: MorphOp = OP_TYPE.into();
         let mut current = 0usize;
@@ -68,7 +79,9 @@ fn fast_morph_op_1d_sse_impl<const OP_TYPE: u8>(slice: &[u8]) -> u8 {
             MorphOp::Erode => _mm_hmin_epu8,
         };
 
-        let upper_fix = _mm_set_epi64x(o_val as i64, 0);
+        let upper_fix = _mm_set_epi8(
+            o_val, o_val, o_val, o_val, o_val, o_val, o_val, o_val, 0, 0, 0, 0, 0, 0, 0, 0,
+        );
 
         while current + 16 < slice.len() {
             let values = _mm_loadu_si128(slice.as_ptr().add(current) as *const __m128i);
@@ -102,13 +115,23 @@ pub fn fast_morph_op_3d_sse<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
 }
 
 #[inline]
+pub fn make_morph_op_3d_sse<const OP_TYPE: u8>() -> unsafe fn(&[Rgb<u8>]) -> Rgb<u8> {
+    let mut _dispatch: unsafe fn(&[Rgb<u8>]) -> Rgb<u8> = fast_morph_op_3d_sse_impl::<OP_TYPE>;
+    if std::arch::is_x86_feature_detected!("avx2") {
+        _dispatch = fast_morph_op_3d_avx::<OP_TYPE>;
+    }
+    _dispatch
+}
+
+#[inline]
 #[target_feature(enable = "sse4.1")]
 unsafe fn fast_morph_op_3d_sse_del<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
     fast_morph_op_3d_sse_impl::<OP_TYPE>(slice)
 }
 
 #[inline]
-fn fast_morph_op_3d_sse_impl<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
+#[target_feature(enable = "sse4.1")]
+unsafe fn fast_morph_op_3d_sse_impl<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
     unsafe {
         let op_type: MorphOp = OP_TYPE.into();
         let mut current = 0usize;
@@ -134,13 +157,15 @@ fn fast_morph_op_3d_sse_impl<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
             MorphOp::Erode => _mm_hmin_epu8,
         };
 
-        let upper_fix = _mm_set_epi64x(o_val as i64, 0);
+        let upper_fix = _mm_set_epi8(
+            o_val, o_val, o_val, o_val, o_val, o_val, o_val, o_val, 0, 0, 0, 0, 0, 0, 0, 0,
+        );
 
         while current + 16 < slice.len() {
-            let src_ptr = (slice.as_ptr() as *const u8).add(current * 3) as *const __m128i;
-            let row0 = _mm_loadu_si128(src_ptr);
-            let row1 = _mm_loadu_si128(src_ptr.add(16));
-            let row2 = _mm_loadu_si128(src_ptr.add(32));
+            let src_ptr = slice.get_unchecked(current..).as_ptr() as *const u8;
+            let row0 = _mm_loadu_si128(src_ptr as *const __m128i);
+            let row1 = _mm_loadu_si128(src_ptr.add(16) as *const __m128i);
+            let row2 = _mm_loadu_si128(src_ptr.add(32) as *const __m128i);
             let (rv, gv, bv) = _mm_deinterleave_rgb(row0, row1, row2);
             best_value_16_rv = decision_16(best_value_16_rv, rv);
             best_value_16_gv = decision_16(best_value_16_gv, gv);
@@ -149,7 +174,7 @@ fn fast_morph_op_3d_sse_impl<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
         }
 
         while current + 8 < slice.len() {
-            let src_ptr = (slice.as_ptr() as *const u8).add(current * 3);
+            let src_ptr = slice.get_unchecked(current..).as_ptr() as *const u8;
             let row0 = _mm_loadu_si128(src_ptr as *const __m128i);
             let row1 = _mm_or_si128(_mm_loadu_si64(src_ptr.add(16)), upper_fix);
             let (rv, gv, bv) = _mm_deinterleave_rgb(row0, row1, vo_val);
@@ -178,6 +203,15 @@ fn fast_morph_op_3d_sse_impl<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
 }
 
 #[inline]
+pub fn make_morph_op_4d_sse<const OP_TYPE: u8>() -> unsafe fn(&[Rgba<u8>]) -> Rgba<u8> {
+    let mut _dispatch: unsafe fn(&[Rgba<u8>]) -> Rgba<u8> = fast_morph_op_4d_sse_impl::<OP_TYPE>;
+    if std::arch::is_x86_feature_detected!("avx2") {
+        _dispatch = fast_morph_op_4d_avx::<OP_TYPE>;
+    }
+    _dispatch
+}
+
+#[inline]
 pub fn fast_morph_op_4d_sse<const OP_TYPE: u8>(slice: &[Rgba<u8>]) -> Rgba<u8> {
     unsafe { fast_morph_op_4d_sse_del::<OP_TYPE>(slice) }
 }
@@ -189,7 +223,8 @@ unsafe fn fast_morph_op_4d_sse_del<const OP_TYPE: u8>(slice: &[Rgba<u8>]) -> Rgb
 }
 
 #[inline]
-fn fast_morph_op_4d_sse_impl<const OP_TYPE: u8>(slice: &[Rgba<u8>]) -> Rgba<u8> {
+#[target_feature(enable = "sse4.1")]
+unsafe fn fast_morph_op_4d_sse_impl<const OP_TYPE: u8>(slice: &[Rgba<u8>]) -> Rgba<u8> {
     unsafe {
         let op_type: MorphOp = OP_TYPE.into();
         let mut current = 0usize;
@@ -217,11 +252,11 @@ fn fast_morph_op_4d_sse_impl<const OP_TYPE: u8>(slice: &[Rgba<u8>]) -> Rgba<u8> 
         };
 
         while current + 16 < slice.len() {
-            let src_ptr = (slice.as_ptr() as *const u8).add(current * 4) as *const __m128i;
-            let row0 = _mm_loadu_si128(src_ptr);
-            let row1 = _mm_loadu_si128(src_ptr.add(16));
-            let row2 = _mm_loadu_si128(src_ptr.add(32));
-            let row3 = _mm_loadu_si128(src_ptr.add(48));
+            let src_ptr = slice.get_unchecked(current..).as_ptr() as *const u8;
+            let row0 = _mm_loadu_si128(src_ptr as *const __m128i);
+            let row1 = _mm_loadu_si128(src_ptr.add(16) as *const __m128i);
+            let row2 = _mm_loadu_si128(src_ptr.add(32) as *const __m128i);
+            let row3 = _mm_loadu_si128(src_ptr.add(48) as *const __m128i);
             let (rv, gv, bv, av) = _mm_deinterleave_rgba(row0, row1, row2, row3);
             best_value_16_rv = decision_16(best_value_16_rv, rv);
             best_value_16_gv = decision_16(best_value_16_gv, gv);
@@ -231,7 +266,7 @@ fn fast_morph_op_4d_sse_impl<const OP_TYPE: u8>(slice: &[Rgba<u8>]) -> Rgba<u8> 
         }
 
         while current + 8 < slice.len() {
-            let src_ptr = (slice.as_ptr() as *const u8).add(current * 4);
+            let src_ptr = slice.get_unchecked(current..).as_ptr() as *const u8;
             let row0 = _mm_loadu_si128(src_ptr as *const __m128i);
             let row1 = _mm_loadu_si128(src_ptr.add(16) as *const __m128i);
             let (rv, gv, bv, av) = _mm_deinterleave_rgba(row0, row1, vo_val, vo_val);

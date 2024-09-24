@@ -27,8 +27,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-use rayon::ThreadPool;
 use crate::ImageSize;
+use rayon::ThreadPool;
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Default)]
 pub enum MorphologyThreadingPolicy {

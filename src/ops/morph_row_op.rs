@@ -28,10 +28,10 @@
  */
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
-use crate::ImageSize;
 use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_1d;
 use crate::unsafe_slice::UnsafeSlice;
+use crate::ImageSize;
 
 #[derive(Clone)]
 pub struct MorphFilterFlat2DRow<const OP_TYPE: u8> {}

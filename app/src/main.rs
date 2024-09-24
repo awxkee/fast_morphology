@@ -1,4 +1,6 @@
-use fast_morphology::{dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy};
+use fast_morphology::{
+    dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
+};
 use image::{EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
     Mat, MatTrait, MatTraitConstManual, Point, Scalar, BORDER_CONSTANT, BORDER_ISOLATED,
@@ -64,12 +66,12 @@ fn gaussian_kernel(size: usize, sigma: f32) -> Vec<Vec<f32>> {
 }
 
 fn main() {
-    let radius_size = 15;
+    let radius_size = 5;
     let mut structuring_element = circle_se(radius_size);
 
-    opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
-    opencv::core::set_use_ipp(true).expect("Failed to disable IPP");
-    opencv::core::set_use_optimized(false).expect("Failed to disable opts");
+    // opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
+    // opencv::core::set_use_ipp(true).expect("Failed to disable IPP");
+    // opencv::core::set_use_optimized(false).expect("Failed to disable opts");
 
     let se_size = radius_size * 2 + 1;
     let full_size = se_size;
@@ -78,7 +80,7 @@ fn main() {
         println!("{:?}", Vec::from(elements));
     }
 
-    let img = ImageReader::open("./assets/fruits.jpg")
+    let img = ImageReader::open("./assets/ebelhard.jpg")
         .unwrap()
         .decode()
         .unwrap();
@@ -161,7 +163,7 @@ fn main() {
         a[2] = dst_3;
     }
 
-    // let rgba_image = transient_rgba.as_bytes();
+    let rgba_image = transient_rgba.as_bytes();
     let mut dst = vec![0u8; saved_origin.len()];
 
     let exec_time = Instant::now();
@@ -178,46 +180,46 @@ fn main() {
 
     println!("rgb exec time {:?}", exec_time.elapsed());
 
-    let mut mat = Mat::new_rows_cols_with_default(
-        dimensions.1 as i32,
-        dimensions.0 as i32,
-        CV_8UC3,
-        Scalar::new(0., 0., 0., 0.),
-    )
-    .unwrap();
-    unsafe {
-        for (index, &byte) in saved_origin.iter().enumerate() {
-            mat.data_mut().add(index).write(byte);
-        }
-    }
-    let mut kernel = Mat::new_rows_cols_with_default(
-        full_size as i32,
-        full_size as i32,
-        CV_8U,
-        Scalar::new(0., 0., 0., 0.),
-    )
-    .unwrap();
-    unsafe {
-        for (index, &byte) in structuring_element.iter().enumerate() {
-            kernel.data_mut().add(index).write(byte);
-        }
-    }
+    // let mut mat = Mat::new_rows_cols_with_default(
+    //     dimensions.1 as i32,
+    //     dimensions.0 as i32,
+    //     CV_8UC3,
+    //     Scalar::new(0., 0., 0., 0.),
+    // )
+    // .unwrap();
+    // unsafe {
+    //     for (index, &byte) in saved_origin.iter().enumerate() {
+    //         mat.data_mut().add(index).write(byte);
+    //     }
+    // }
+    // let mut kernel = Mat::new_rows_cols_with_default(
+    //     full_size as i32,
+    //     full_size as i32,
+    //     CV_8U,
+    //     Scalar::new(0., 0., 0., 0.),
+    // )
+    // .unwrap();
+    // unsafe {
+    //     for (index, &byte) in structuring_element.iter().enumerate() {
+    //         kernel.data_mut().add(index).write(byte);
+    //     }
+    // }
 
     let exec_time = Instant::now();
 
-    let mut dst_mat = Mat::default();
-    imgproc::dilate(
-        &mat,
-        &mut dst_mat,
-        &kernel,
-        Point::new(-1, -1),
-        1,
-        BORDER_REPLICATE,
-        Scalar::new(0., 0., 0., 0.),
-    )
-    .unwrap();
+    // let mut dst_mat = Mat::default();
+    // imgproc::dilate(
+    //     &mat,
+    //     &mut dst_mat,
+    //     &kernel,
+    //     Point::new(-1, -1),
+    //     1,
+    //     BORDER_REPLICATE,
+    //     Scalar::new(0., 0., 0., 0.),
+    // )
+    // .unwrap();
 
-    let open_cv_bytes = dst_mat.data_bytes().unwrap();
+    // let open_cv_bytes = dst_mat.data_bytes().unwrap();
 
     println!("opencv exec time {:?}", exec_time.elapsed());
 
@@ -239,12 +241,12 @@ fn main() {
     )
     .unwrap();
 
-    image::save_buffer(
-        "converted_opencv.png",
-        &open_cv_bytes,
-        dimensions.0,
-        dimensions.1,
-        image::ColorType::Rgb8,
-    )
-    .unwrap();
+    // image::save_buffer(
+    //     "converted_opencv.png",
+    //     &open_cv_bytes,
+    //     dimensions.0,
+    //     dimensions.1,
+    //     image::ColorType::Rgb8,
+    // )
+    // .unwrap();
 }

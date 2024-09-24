@@ -90,7 +90,13 @@ pub(crate) unsafe fn make_morphology_rgba<const OP_TYPE: u8>(
         && structuring_element_size.height < PREFERRED_KERNEL_SIZE_FOR_ARENA
         || border_mode != BorderMode::Clamp
     {
-        let padded = make_arena::<4>(src, width as u32, height as u32, structuring_element_size, border_mode);
+        let padded = make_arena::<4>(
+            src,
+            width as u32,
+            height as u32,
+            structuring_element_size,
+            border_mode,
+        );
         Some(padded)
     } else {
         None
@@ -104,7 +110,7 @@ pub(crate) unsafe fn make_morphology_rgba<const OP_TYPE: u8>(
 
             let mut yy = 0usize;
 
-            for y in (0..(height as usize).saturating_sub(4)).step_by(4) {
+            for y in (0..height.saturating_sub(4)).step_by(4) {
                 let cloned_se = analyzed_se.clone();
                 let cloned_filter = filter_4_rows.clone();
                 let cloned_arena = arena_arc.clone();
@@ -147,14 +153,7 @@ pub(crate) unsafe fn make_morphology_rgba<const OP_TYPE: u8>(
             let cloned_se = analyzed_se.clone();
             let cloned_filter = filter_4_rows.clone();
             let cloned_arena = arena_arc.clone();
-            cloned_filter.dispatch_row(
-                src,
-                &unsafe_slice,
-                image_size,
-                cloned_se,
-                y,
-                &cloned_arena,
-            );
+            cloned_filter.dispatch_row(src, &unsafe_slice, image_size, cloned_se, y, &cloned_arena);
 
             yy = y;
         }

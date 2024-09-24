@@ -26,13 +26,16 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+extern crate core;
 
 mod arena;
+mod border_mode;
 mod filter;
 mod filter_op_declare;
 mod filter_rgb;
 mod filter_rgba;
 mod flat_se;
+mod img_size;
 mod op;
 mod op_impl;
 mod op_rgb_impl;
@@ -43,9 +46,10 @@ mod se_scan;
 mod structuring_element;
 mod thread_policy;
 mod unsafe_slice;
-mod border_mode;
-mod img_size;
+mod arena_roi;
 
+pub use border_mode::BorderMode;
+pub use img_size::ImageSize;
 pub use op::dilate;
 pub use op::dilate_rgb;
 pub use op::dilate_rgba;
@@ -54,5 +58,3 @@ pub use op::erode_rgb;
 pub use op::erode_rgba;
 pub use structuring_element::KernelShape;
 pub use thread_policy::MorphologyThreadingPolicy;
-pub use border_mode::BorderMode;
-pub use img_size::ImageSize;

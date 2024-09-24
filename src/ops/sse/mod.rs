@@ -27,7 +27,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 mod hminmax;
+mod morph_op;
+mod morph_op_4_rows;
+mod morph_rgb;
+mod morph_rgb_4_rows;
+mod morph_rgba;
+mod morph_rgba_4_rows;
 mod op;
 mod v_load;
 
+pub use hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
+pub use morph_op::MorphOpFilterSse2DRow;
+pub use morph_op_4_rows::MorphOpFilterSse2D4Rows;
+pub use morph_rgb::MorphOpFilterRgbSse2DRow;
+pub use morph_rgb_4_rows::MorphOpFilterRgbSse2D4Rows;
+pub use morph_rgba::MorphOpFilterRgbaSse2DRow;
+pub use morph_rgba_4_rows::MorphOpFilterRgbaSse2D4Rows;
 pub use op::{fast_morph_op_1d_sse, fast_morph_op_3d_sse, fast_morph_op_4d_sse};
+pub use v_load::*;

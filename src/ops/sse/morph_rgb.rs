@@ -29,28 +29,31 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
-use crate::ops::neon::op::fast_morph_op_3d_neon;
-use crate::ops::neon::utils::vld3h_u8;
+use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
+use crate::ops::sse::op::make_morph_op_3d_sse;
+use crate::ops::sse::v_load::{
+    _mm_load_deinterleave_half_rgb, _mm_load_deinterleave_quart_rgb, _mm_load_deinterleave_rgb,
+};
 use crate::ops::utils::write_rgb_to_slice;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 use colorutils_rs::Rgb;
-#[cfg(target_arch = "aarch64")]
-use std::arch::aarch64::*;
-#[cfg(target_arch = "arm")]
-use std::arch::arm::*;
-use crate::se_scan::ScanPoint;
+#[cfg(target_arch = "x86")]
+use std::arch::x86::*;
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
 
 #[derive(Clone)]
-pub struct MorphOpFilterRgbNeon2DRow<const OP_TYPE: u8> {}
+pub struct MorphOpFilterRgbSse2DRow<const OP_TYPE: u8> {}
 
-impl<const OP_TYPE: u8> Default for MorphOpFilterRgbNeon2DRow<OP_TYPE> {
+impl<const OP_TYPE: u8> Default for MorphOpFilterRgbSse2DRow<OP_TYPE> {
     fn default() -> Self {
-        MorphOpFilterRgbNeon2DRow {}
+        MorphOpFilterRgbSse2DRow {}
     }
 }
 
-impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_TYPE> {
+impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2DRow<OP_TYPE> {
+    #[target_feature(enable = "sse4.1")]
     unsafe fn dispatch_row(
         &self,
         src: &[u8],
@@ -71,27 +74,19 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
             MorphOp::Erode => u8::MAX,
         };
 
-        let decision_16 = match op_type {
-            MorphOp::Dilate => vmaxq_u8,
-            MorphOp::Erode => vminq_u8,
-        };
-
-        let decision_8 = match op_type {
-            MorphOp::Dilate => vmax_u8,
-            MorphOp::Erode => vmin_u8,
+        let decision = match op_type {
+            MorphOp::Dilate => _mm_max_epu8,
+            MorphOp::Erode => _mm_min_epu8,
         };
 
         let det_op = match op_type {
-            MorphOp::Dilate => vmaxvq_u8,
-            MorphOp::Erode => vminvq_u8,
-        };
-
-        let det_op_8 = match op_type {
-            MorphOp::Dilate => vmaxv_u8,
-            MorphOp::Erode => vminv_u8,
+            MorphOp::Dilate => _mm_hmax_epu8,
+            MorphOp::Erode => _mm_hmin_epu8,
         };
 
         if let Some(arena) = arena {
+            let minmax_resolver = make_morph_op_3d_sse::<OP_TYPE>();
+
             let mut items0 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
 
             let arena_stride = arena.width * 3;
@@ -101,21 +96,14 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
             let dx = arena.pad_w as i32;
             let dy = arena.pad_h as i32;
 
-            let d_size = ScanPoint::new(dx, dy);
-            let filter_bounds = analyzed_se
-                .left_front
-                .filter_bounds
-                .iter()
-                .map(|&x| x + d_size)
-                .collect::<Vec<_>>();
-
             for x in 0..width {
+                let filter_bounds = &analyzed_se.left_front.filter_bounds;
 
                 let mut iter_index = 0usize;
 
                 for filter in filter_bounds.iter() {
-                    let filter_start_x = filter.x + x as i32;
-                    let filter_start_y = filter.y + y as i32;
+                    let filter_start_x = filter.x + x as i32 + dx;
+                    let filter_start_y = filter.y + y as i32 + dy;
 
                     let filter_size = filter.size as usize;
                     let py = filter_start_y as usize;
@@ -127,7 +115,7 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
                         let px = (filter_start_x + current_x as i32) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld3q_u8(current0.as_ptr());
+                        let new_value0 = _mm_load_deinterleave_rgb(current0.as_ptr());
 
                         *items0.get_unchecked_mut(iter_index) = Rgb::new(
                             det_op(new_value0.0),
@@ -144,12 +132,13 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
                         let px = (filter_start_x + current_x as i32) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld3_u8(current0.as_ptr());
+                        let new_value0 =
+                            _mm_load_deinterleave_half_rgb(current0.as_ptr(), base_val);
 
                         *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op_8(new_value0.0),
-                            det_op_8(new_value0.1),
-                            det_op_8(new_value0.2),
+                            det_op(new_value0.0),
+                            det_op(new_value0.1),
+                            det_op(new_value0.2),
                         );
 
                         iter_index += 1;
@@ -161,12 +150,13 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
                         let px = (filter_start_x + current_x as i32) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld3h_u8(current0.as_ptr(), base_val);
+                        let new_value0 =
+                            _mm_load_deinterleave_quart_rgb(current0.as_ptr(), base_val);
 
                         *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op_8(new_value0.0),
-                            det_op_8(new_value0.1),
-                            det_op_8(new_value0.2),
+                            det_op(new_value0.0),
+                            det_op(new_value0.1),
+                            det_op(new_value0.2),
                         );
                         iter_index += 1;
 
@@ -188,7 +178,7 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
 
                 let px = x * 3;
 
-                let rgb0 = fast_morph_op_3d_neon::<OP_TYPE>(items0.get_unchecked(..iter_index));
+                let rgb0 = minmax_resolver(items0.get_unchecked(..iter_index));
                 write_rgb_to_slice(dst, y * stride + px, rgb0);
             }
         } else {
@@ -219,88 +209,111 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
 
                     let mut current_x = 0usize;
 
-                    let mut values_r_0 = vdupq_n_u8(rgb0.r);
-                    let mut values_g_0 = vdupq_n_u8(rgb0.g);
-                    let mut values_b_0 = vdupq_n_u8(rgb0.b);
+                    let mut values_r_0 = _mm_set1_epi8(rgb0.r as i8);
+                    let mut values_g_0 = _mm_set1_epi8(rgb0.g as i8);
+                    let mut values_b_0 = _mm_set1_epi8(rgb0.b as i8);
 
                     while current_x + 16 < filter_size && filter_start_x + current_x as i32 > 0 {
                         let px =
                             (filter_start_x + current_x as i32).min(max_width).max(0) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld3q_u8(current0.as_ptr());
+                        let new_value0 = _mm_load_deinterleave_rgb(current0.as_ptr());
 
-                        values_r_0 = decision_16(values_r_0, new_value0.0);
-                        values_g_0 = decision_16(values_g_0, new_value0.1);
-                        values_b_0 = decision_16(values_b_0, new_value0.2);
+                        values_r_0 = decision(values_r_0, new_value0.0);
+                        values_g_0 = decision(values_g_0, new_value0.1);
+                        values_b_0 = decision(values_b_0, new_value0.2);
 
                         current_x += 16;
                     }
 
-                    let mut values_r8_0 = vdup_n_u8(det_op(values_r_0));
-                    let mut values_g8_0 = vdup_n_u8(det_op(values_g_0));
-                    let mut values_b8_0 = vdup_n_u8(det_op(values_b_0));
+                    let mut values_r8_0 = _mm_set1_epi8(det_op(values_r_0) as i8);
+                    let mut values_g8_0 = _mm_set1_epi8(det_op(values_g_0) as i8);
+                    let mut values_b8_0 = _mm_set1_epi8(det_op(values_b_0) as i8);
 
                     while current_x + 8 < filter_size && filter_start_x + current_x as i32 > 0 {
                         let px =
                             (filter_start_x + current_x as i32).min(max_width).max(0) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld3_u8(current0.as_ptr());
+                        let new_value0 =
+                            _mm_load_deinterleave_half_rgb(current0.as_ptr(), base_val);
 
-                        values_r8_0 = decision_8(values_r8_0, new_value0.0);
-                        values_g8_0 = decision_8(values_g8_0, new_value0.1);
-                        values_b8_0 = decision_8(values_b8_0, new_value0.2);
+                        values_r8_0 = decision(values_r8_0, new_value0.0);
+                        values_g8_0 = decision(values_g8_0, new_value0.1);
+                        values_b8_0 = decision(values_b8_0, new_value0.2);
 
                         current_x += 8;
                     }
 
-                    let mut values_r8_0 = vdup_n_u8(det_op_8(values_r8_0));
-                    let mut values_g8_0 = vdup_n_u8(det_op_8(values_g8_0));
-                    let mut values_b8_0 = vdup_n_u8(det_op_8(values_b8_0));
+                    let mut values_r8_0 = _mm_set1_epi8(det_op(values_r8_0) as i8);
+                    let mut values_g8_0 = _mm_set1_epi8(det_op(values_g8_0) as i8);
+                    let mut values_b8_0 = _mm_set1_epi8(det_op(values_b8_0) as i8);
 
                     while current_x + 4 < filter_size && filter_start_x + current_x as i32 > 0 {
                         let px =
                             (filter_start_x + current_x as i32).min(max_width).max(0) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = vld3h_u8(current0.as_ptr(), base_val);
+                        let new_value0 =
+                            _mm_load_deinterleave_quart_rgb(current0.as_ptr(), base_val);
 
-                        values_r8_0 = decision_8(values_r8_0, new_value0.0);
-                        values_g8_0 = decision_8(values_g8_0, new_value0.1);
-                        values_b8_0 = decision_8(values_b8_0, new_value0.2);
+                        values_r8_0 = decision(values_r8_0, new_value0.0);
+                        values_g8_0 = decision(values_g8_0, new_value0.1);
+                        values_b8_0 = decision(values_b8_0, new_value0.2);
 
                         current_x += 4;
                     }
 
-                    let arr0: [u8; 8] = [
-                        det_op_8(values_r8_0),
-                        det_op_8(values_g8_0),
-                        det_op_8(values_b8_0),
-                        base_val,
-                        base_val,
-                        base_val,
-                        base_val,
-                        base_val,
-                    ];
-
-                    let mut values0 = vld1_u8(arr0.as_ptr());
+                    let mut values0 = _mm_setr_epi8(
+                        det_op(values_r8_0) as i8,
+                        det_op(values_g8_0) as i8,
+                        det_op(values_b8_0) as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                        base_val as i8,
+                    );
 
                     while current_x < filter_size {
                         let px =
                             (filter_start_x + current_x as i32).min(max_width).max(0) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let arr0: [u8; 8] =
-                            [current0[0], current0[1], current0[2], base_val, 0, 0, 0, 0];
-                        let new_value0 = vld1_u8(arr0.as_ptr());
+                        let new_value0 = _mm_setr_epi8(
+                            current0[0] as i8,
+                            current0[1] as i8,
+                            current0[2] as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                            base_val as i8,
+                        );
 
-                        values0 = decision_8(values0, new_value0);
+                        values0 = decision(values0, new_value0);
 
                         current_x += 1;
                     }
 
-                    let values0 = vget_lane_u32::<0>(vreinterpret_u32_u8(values0)).to_le_bytes();
+                    let values0 = _mm_extract_epi32::<0>(values0).to_le_bytes();
                     rgb0 = Rgb::new(values0[0], values0[1], values0[2]);
                 }
 

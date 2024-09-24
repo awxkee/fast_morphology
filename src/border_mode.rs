@@ -27,47 +27,37 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use num_traits::{AsPrimitive, Euclid, FromPrimitive, Signed};
+use std::ops::Index;
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default)]
 /// Declares an edge handling mode
 pub enum BorderMode {
     /// If kernel goes out of bounds it will be clipped to an edge and edge pixel replicated across filter
     #[default]
-    Clamp = 0,
+    Clamp,
     /// If filter goes out of bounds image will be replicated with rule `cdefgh|abcdefgh|abcdefg`
-    Wrap = 1,
+    Wrap,
     /// If filter goes out of bounds image will be replicated with rule `fedcba|abcdefgh|hgfedcb`
-    Reflect = 2,
+    Reflect,
     /// If filter goes out of bounds image will be replicated with rule `gfedcb|abcdefgh|gfedcba`
-    Reflect101 = 3,
-}
-
-impl From<usize> for BorderMode {
-    fn from(value: usize) -> Self {
-        match value {
-            0 => BorderMode::Clamp,
-            2 => BorderMode::Wrap,
-            3 => BorderMode::Reflect,
-            4 => BorderMode::Reflect101,
-            _ => {
-                panic!("Unknown edge mode for value: {}", value);
-            }
-        }
-    }
+    Reflect101,
+    /// If filter goes out of bounds image will be replaced with provided constant values
+    Constant(OutOfBoundsConstant),
 }
 
 #[inline]
 pub(crate) fn reflect_index<
     T: Copy
-    + 'static
-    + PartialOrd
-    + PartialEq
-    + std::ops::Sub<Output = T>
-    + std::ops::Mul<Output = T>
-    + Euclid
-    + FromPrimitive
-    + Signed
-    + AsPrimitive<usize>,
+        + 'static
+        + PartialOrd
+        + PartialEq
+        + std::ops::Sub<Output = T>
+        + std::ops::Mul<Output = T>
+        + Euclid
+        + FromPrimitive
+        + Signed
+        + AsPrimitive<usize>,
 >(
     i: T,
     n: T,
@@ -83,16 +73,16 @@ where
 #[inline(always)]
 pub(crate) fn reflect_index_101<
     T: Copy
-    + 'static
-    + PartialOrd
-    + PartialEq
-    + std::ops::Sub<Output = T>
-    + std::ops::Mul<Output = T>
-    + Euclid
-    + FromPrimitive
-    + Signed
-    + AsPrimitive<usize>
-    + Ord,
+        + 'static
+        + PartialOrd
+        + PartialEq
+        + std::ops::Sub<Output = T>
+        + std::ops::Mul<Output = T>
+        + Euclid
+        + FromPrimitive
+        + Signed
+        + AsPrimitive<usize>
+        + Ord,
 >(
     i: T,
     n: T,
@@ -113,4 +103,40 @@ where
             .as_();
     }
     i.as_()
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct OutOfBoundsConstant {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+
+impl OutOfBoundsConstant {
+    pub fn new(r: u8, g: u8, b: u8, a: u8) -> OutOfBoundsConstant {
+        OutOfBoundsConstant { r, g, b, a }
+    }
+
+    pub fn replicate(v: u8) -> OutOfBoundsConstant {
+        OutOfBoundsConstant::new(v, v, v, v)
+    }
+}
+
+impl Index<usize> for OutOfBoundsConstant {
+    type Output = u8;
+
+    #[inline(always)]
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.r,
+            1 => &self.g,
+            2 => &self.b,
+            3 => &self.a,
+            _ => {
+                panic!("Index if {} is not exists in [OutOfBoundsConstant]", index)
+            }
+        }
+    }
 }

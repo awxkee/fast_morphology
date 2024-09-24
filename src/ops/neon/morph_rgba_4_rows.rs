@@ -35,7 +35,11 @@ use crate::ops::utils::write_rgba_to_slice;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 use colorutils_rs::Rgba;
+#[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
+#[cfg(target_arch = "arm")]
+use std::arch::arm::*;
+use crate::se_scan::ScanPoint;
 
 #[derive(Clone)]
 pub struct MorphOpFilterRgbaNeon2D4Rows<const OP_TYPE: u8> {}
@@ -104,14 +108,21 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbaNeon2D4Rows<
             let dx = arena.pad_w as i32;
             let dy = arena.pad_h as i32;
 
+            let d_size = ScanPoint::new(dx, dy);
+            let filter_bounds = analyzed_se
+                .left_front
+                .filter_bounds
+                .iter()
+                .map(|&x| x + d_size)
+                .collect::<Vec<_>>();
+
             for x in 0..width {
-                let filter_bounds = &analyzed_se.left_front.filter_bounds;
 
                 let mut iter_index = 0usize;
 
                 for filter in filter_bounds.iter() {
-                    let filter_start_x = filter.x + x as i32 + dx;
-                    let filter_start_y = filter.y + y as i32 + dy;
+                    let filter_start_x = filter.x + x as i32;
+                    let filter_start_y = filter.y + y as i32;
                     let filter_size = filter.size as usize;
 
                     let py = filter_start_y as usize;

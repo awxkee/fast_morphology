@@ -28,7 +28,9 @@
  */
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use fast_morphology::{dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy};
+use fast_morphology::{
+    dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
+};
 use image::{EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{Mat, MatTrait, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC3, CV_8UC4};
 use opencv::imgproc;
@@ -162,7 +164,7 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
         CV_8U,
         Scalar::new(0., 0., 0., 0.),
     )
-        .unwrap();
+    .unwrap();
     unsafe {
         for (index, &byte) in structuring_element_15.iter().enumerate() {
             kernel_15.data_mut().add(index).write(byte);
@@ -183,7 +185,7 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
                     BorderMode::default(),
                     MorphologyThreadingPolicy::Adaptive,
                 )
-                    .unwrap();
+                .unwrap();
             })
         },
     );
@@ -194,7 +196,7 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
         CV_8UC4,
         Scalar::new(0., 0., 0., 0.),
     )
-        .unwrap();
+    .unwrap();
     unsafe {
         for (index, &byte) in rgb_bytes.iter().enumerate() {
             mat.data_mut().add(index).write(byte);
@@ -206,7 +208,7 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
             "OpenCV, RGBA Image dilation: SE {}x{}",
             se_size_15, se_size_15
         )
-            .as_str(),
+        .as_str(),
         |b| {
             b.iter(|| {
                 let mut dst_mat = Mat::default();
@@ -219,13 +221,17 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
                     BORDER_REPLICATE,
                     Scalar::new(0., 0., 0., 0.),
                 )
-                    .unwrap();
+                .unwrap();
             })
         },
     );
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
+    opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
+    opencv::core::set_use_ipp(true).expect("Failed to disable IPP");
+    opencv::core::set_use_optimized(false).expect("Failed to disable opts");
+
     exec_bench_rgb(c, 4);
     exec_bench_rgb(c, 7);
     exec_bench_rgb(c, 10);

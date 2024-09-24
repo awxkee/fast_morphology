@@ -28,7 +28,10 @@
  */
 use crate::op_type::MorphOp;
 use colorutils_rs::{Rgb, Rgba};
+#[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
+#[cfg(target_arch = "arm")]
+use std::arch::arm::*;
 
 #[inline(always)]
 pub fn fast_morph_op_1d_neon<const OP_TYPE: u8>(slice: &[u8]) -> u8 {
@@ -55,6 +58,22 @@ pub fn fast_morph_op_1d_neon<const OP_TYPE: u8>(slice: &[u8]) -> u8 {
             MorphOp::Dilate => vmaxv_u8,
             MorphOp::Erode => vminv_u8,
         };
+
+        while current + 64 < slice.len() {
+            let values = vld1q_u8_x4(slice.as_ptr().add(current));
+            best_value_16 = decision_16(best_value_16, values.0);
+            best_value_16 = decision_16(best_value_16, values.1);
+            best_value_16 = decision_16(best_value_16, values.2);
+            best_value_16 = decision_16(best_value_16, values.3);
+            current += 64;
+        }
+
+        while current + 32 < slice.len() {
+            let values = vld1q_u8_x2(slice.as_ptr().add(current));
+            best_value_16 = decision_16(best_value_16, values.0);
+            best_value_16 = decision_16(best_value_16, values.1);
+            current += 32;
+        }
 
         while current + 16 < slice.len() {
             let values = vld1q_u8(slice.as_ptr().add(current));
@@ -115,8 +134,25 @@ pub fn fast_morph_op_4d_neon<const OP_TYPE: u8>(slice: &[Rgba<u8>]) -> Rgba<u8> 
             MorphOp::Erode => vminv_u8,
         };
 
+        while current + 32 < slice.len() {
+            let v_lane = slice.as_ptr().add(current);
+            let values0 = vld4q_u8(v_lane as *const u8);
+            let values1 = vld4q_u8(v_lane.add(16) as *const u8);
+            best_value_16_r = decision_16(best_value_16_r, values0.0);
+            best_value_16_g = decision_16(best_value_16_g, values0.1);
+            best_value_16_b = decision_16(best_value_16_b, values0.2);
+            best_value_16_a = decision_16(best_value_16_a, values0.3);
+
+            best_value_16_r = decision_16(best_value_16_r, values1.0);
+            best_value_16_g = decision_16(best_value_16_g, values1.1);
+            best_value_16_b = decision_16(best_value_16_b, values1.2);
+            best_value_16_a = decision_16(best_value_16_a, values1.3);
+            current += 32;
+        }
+
         while current + 16 < slice.len() {
-            let values = vld4q_u8((slice.as_ptr() as *const u8).add(current * 4));
+            let v_lane = slice.as_ptr().add(current);
+            let values = vld4q_u8(v_lane as *const u8);
             best_value_16_r = decision_16(best_value_16_r, values.0);
             best_value_16_g = decision_16(best_value_16_g, values.1);
             best_value_16_b = decision_16(best_value_16_b, values.2);
@@ -201,6 +237,20 @@ pub fn fast_morph_op_3d_neon<const OP_TYPE: u8>(slice: &[Rgb<u8>]) -> Rgb<u8> {
             MorphOp::Dilate => vmaxv_u8,
             MorphOp::Erode => vminv_u8,
         };
+
+        while current + 32 < slice.len() {
+            let v_lane = slice.as_ptr().add(current);
+            let values0 = vld3q_u8(v_lane as *const u8);
+            let values1 = vld3q_u8(v_lane.add(16) as *const u8);
+            best_value_16_r = decision_16(best_value_16_r, values0.0);
+            best_value_16_g = decision_16(best_value_16_g, values0.1);
+            best_value_16_b = decision_16(best_value_16_b, values0.2);
+
+            best_value_16_r = decision_16(best_value_16_r, values1.0);
+            best_value_16_g = decision_16(best_value_16_g, values1.1);
+            best_value_16_b = decision_16(best_value_16_b, values1.2);
+            current += 32;
+        }
 
         while current + 16 < slice.len() {
             let values = vld3q_u8((slice.as_ptr() as *const u8).add(current * 3));

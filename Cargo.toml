@@ -16,7 +16,6 @@ repository = "https://github.com/awxkee/fast_morphology.git"
 exclude = ["*.jpg", "*.png"]
 
 [dependencies]
-colorutils-rs = {path = "../../RustroverProjects/colorutils-rs"}
-nalgebra = "0.33.0"
+colorutils-rs = "0.5.12"
 num-traits = "0.2.19"
 rayon = "1.10.0"

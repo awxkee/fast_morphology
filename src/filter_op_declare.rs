@@ -27,8 +27,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::flat_se::AnalyzedSe;
-use crate::ImageSize;
 use crate::unsafe_slice::UnsafeSlice;
+use crate::ImageSize;
 
 #[derive(Clone)]
 pub struct Arena {

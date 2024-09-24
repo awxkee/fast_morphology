@@ -26,48 +26,11 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+mod op_1d;
+mod op_3d;
+mod op_4d;
+mod v_load;
 
-#[cfg(target_arch = "x86")]
-use std::arch::x86::*;
-#[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
-
-#[inline]
-#[target_feature(enable = "sse4.1")]
-pub unsafe fn _mm_hmax_epu8(v: __m128i) -> u8 {
-    let mut vmax = v;
-    vmax = _mm_max_epu8(vmax, _mm_alignr_epi8::<1>(vmax, vmax));
-    vmax = _mm_max_epu8(vmax, _mm_alignr_epi8::<2>(vmax, vmax));
-    vmax = _mm_max_epu8(vmax, _mm_alignr_epi8::<4>(vmax, vmax));
-    vmax = _mm_max_epu8(vmax, _mm_alignr_epi8::<8>(vmax, vmax));
-    _mm_extract_epi8::<0>(vmax) as u8
-}
-
-#[inline]
-#[target_feature(enable = "sse4.1")]
-pub unsafe fn _mm_hmin_epu8(v: __m128i) -> u8 {
-    let mut vmax = v;
-    vmax = _mm_min_epu8(vmax, _mm_alignr_epi8::<1>(vmax, vmax));
-    vmax = _mm_min_epu8(vmax, _mm_alignr_epi8::<2>(vmax, vmax));
-    vmax = _mm_min_epu8(vmax, _mm_alignr_epi8::<4>(vmax, vmax));
-    vmax = _mm_min_epu8(vmax, _mm_alignr_epi8::<8>(vmax, vmax));
-    _mm_extract_epi8::<0>(vmax) as u8
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
-    use std::arch::x86_64::{__m128i, _mm_loadu_si128};
-
-    #[test]
-    fn test_hmax() {
-        unsafe {
-            let values: [u8; 16] = [1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-            let row = _mm_loadu_si128(values.as_ptr() as *const __m128i);
-            let max = _mm_hmax_epu8(row);
-            let min = _mm_hmin_epu8(row);
-            assert_eq!(max, 15);
-            assert_eq!(min, 0);
-        }
-    }
-}
+pub use op_1d::fast_morph_op_1d_avx;
+pub use op_3d::fast_morph_op_3d_avx;
+pub use op_4d::fast_morph_op_4d_avx;

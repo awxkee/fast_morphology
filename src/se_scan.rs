@@ -28,10 +28,11 @@
  */
 use crate::flat_se::{AnalyzedSe, FlatSe};
 use crate::structuring_element::KernelShape;
+use std::ops::Add;
 
 // Function to group scan points into FilterBounds
-pub fn group_scan_points(scan_points: &[ScanPoint]) -> Vec<FilterBoundsProcess> {
-    let mut filter_bounds: Vec<FilterBoundsProcess> = Vec::new();
+pub fn group_scan_points(scan_points: &[ScanPoint]) -> Vec<FilterBounds> {
+    let mut filter_bounds: Vec<FilterBounds> = Vec::new();
 
     if scan_points.is_empty() {
         return filter_bounds;
@@ -49,7 +50,7 @@ pub fn group_scan_points(scan_points: &[ScanPoint]) -> Vec<FilterBoundsProcess> 
     for point in sorted_points.iter().skip(1) {
         // If points are consecutive based on x, blend them together
         if point.x != current_x + 1 || current_y != point.y {
-            filter_bounds.push(FilterBoundsProcess {
+            filter_bounds.push(FilterBounds {
                 x: start_x,
                 y: current_y,
                 size: (current_x - start_x + 1) as u16,
@@ -65,7 +66,7 @@ pub fn group_scan_points(scan_points: &[ScanPoint]) -> Vec<FilterBoundsProcess> 
     }
 
     if !point_pushed {
-        filter_bounds.push(FilterBoundsProcess {
+        filter_bounds.push(FilterBounds {
             x: start_x,
             y: current_y,
             size: (current_x - start_x + 1) as u16,
@@ -108,7 +109,6 @@ pub(crate) unsafe fn scan_se(
 
     AnalyzedSe::new(
         structuring_element.to_vec(),
-        structuring_element_size,
         FlatSe::new(iv_left, grouped_points),
     )
 }
@@ -120,12 +120,34 @@ pub struct ScanPoint {
     pub y: i32,
 }
 
+impl Add<ScanPoint> for ScanPoint {
+    type Output = ScanPoint;
+
+    fn add(self, rhs: ScanPoint) -> Self::Output {
+        ScanPoint::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct FilterBoundsProcess {
+pub struct FilterBounds {
     pub x: i32,
     pub y: i32,
     pub size: u16,
+}
+
+impl FilterBounds {
+    pub fn new(x: i32, y: i32, size: u16) -> FilterBounds {
+        FilterBounds { x, y, size }
+    }
+}
+
+impl Add<ScanPoint> for FilterBounds {
+    type Output = FilterBounds;
+
+    fn add(self, rhs: ScanPoint) -> Self::Output {
+        FilterBounds::new(self.x + rhs.x, self.y + rhs.y, self.size)
+    }
 }
 
 impl ScanPoint {

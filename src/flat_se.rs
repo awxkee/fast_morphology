@@ -26,19 +26,18 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::se_scan::{FilterBoundsProcess, ScanPoint};
-use crate::structuring_element::KernelShape;
+use crate::se_scan::{FilterBounds, ScanPoint};
 
 #[derive(Debug, Clone)]
 pub(crate) struct FlatSe {
-    // Significant points { x, y }
+    /// Significant points { x, y }
     pub(crate) element_offsets: Vec<ScanPoint>,
-    // Precomputed filter bounds { x, y, horizontal_length }
-    pub(crate) filter_bounds: Vec<FilterBoundsProcess>,
+    /// Precomputed filter bounds { x, y, horizontal_length }
+    pub(crate) filter_bounds: Vec<FilterBounds>,
 }
 
 impl FlatSe {
-    pub fn new(vec: Vec<ScanPoint>, filter_bounds_process: Vec<FilterBoundsProcess>) -> FlatSe {
+    pub fn new(vec: Vec<ScanPoint>, filter_bounds_process: Vec<FilterBounds>) -> FlatSe {
         FlatSe {
             element_offsets: vec,
             filter_bounds: filter_bounds_process,
@@ -48,8 +47,8 @@ impl FlatSe {
 
 #[derive(Debug, Clone)]
 pub(crate) struct AnalyzedSe {
+    #[allow(dead_code)]
     pub(crate) original_se: Vec<u8>,
-    pub(crate) structuring_element_size: KernelShape,
     pub(crate) left_front: FlatSe,
     pub(crate) is_empty: bool,
 }
@@ -57,14 +56,12 @@ pub(crate) struct AnalyzedSe {
 impl AnalyzedSe {
     pub fn new(
         original_se: Vec<u8>,
-        structuring_element_size: KernelShape,
         left_front: FlatSe,
     ) -> AnalyzedSe {
         let is_empty =
             left_front.element_offsets.is_empty() && left_front.element_offsets.is_empty();
         AnalyzedSe {
             original_se,
-            structuring_element_size,
             left_front,
             is_empty,
         }

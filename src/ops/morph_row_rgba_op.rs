@@ -29,11 +29,11 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
+use crate::ops::op::fast_morph_op_4d;
 use crate::ops::utils::{rgba_from_slice, write_rgba_to_slice};
 use crate::unsafe_slice::UnsafeSlice;
-use colorutils_rs::Rgba;
 use crate::ImageSize;
-use crate::ops::neon::fast_morph_op_4d_neon;
+use colorutils_rs::Rgba;
 
 #[derive(Clone)]
 pub struct MorphOpFilterRgba2DRow<const OP_TYPE: u8> {}
@@ -65,6 +65,7 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgba2DRow<OP_TYP
         };
 
         if let Some(arena) = arena {
+            let minmax_resolver = fast_morph_op_4d::<OP_TYPE>();
             let mut items0 =
                 vec![Rgba::dup(base_val); analyzed_se.left_front.element_offsets.len()];
 
@@ -103,7 +104,11 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgba2DRow<OP_TYP
 
                 let px = x * 4;
                 let offset0 = y * stride + px;
-                write_rgba_to_slice(dst, offset0, fast_morph_op_4d_neon::<OP_TYPE>(items0.get_unchecked(..iter_index)));
+                write_rgba_to_slice(
+                    dst,
+                    offset0,
+                    minmax_resolver(items0.get_unchecked(..iter_index)),
+                );
             }
         } else {
             let max_width = width as i32 - 1;
@@ -136,7 +141,8 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgba2DRow<OP_TYP
                     let mut current_x = 0usize;
 
                     while current_x < filter_size {
-                        let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize * 4;
+                        let px =
+                            (filter_start_x + current_x as i32).min(max_width).max(0) as usize * 4;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
                         let new_value0 = rgba_from_slice(current0);

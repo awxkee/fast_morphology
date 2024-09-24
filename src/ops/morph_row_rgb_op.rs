@@ -31,6 +31,7 @@ use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_3d;
 use crate::ops::utils::{rgb_from_slice, write_rgb_to_slice};
+use crate::se_scan::ScanPoint;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 use colorutils_rs::Rgb;
@@ -68,21 +69,32 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgb2DRow<OP_TYPE
             let dx = arena.pad_w as i32;
             let dy = arena.pad_h as i32;
 
+            let d_size = ScanPoint::new(dx, dy);
+
+            let prepared_kernel = analyzed_se
+                .left_front
+                .filter_bounds
+                .iter()
+                .map(|&x| x + d_size)
+                .collect::<Vec<_>>();
+
             let minmax_resolver = fast_morph_op_3d::<OP_TYPE>();
 
             let src = &arena.arena;
+
+            let arena_stride = arena.width * 3;
 
             let mut items0 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
 
             for x in 0..width {
                 let mut iter_index = 0usize;
 
-                for &filter in analyzed_se.left_front.filter_bounds.iter() {
-                    let filter_start_x = filter.x + x as i32 + dx;
-                    let filter_start_y = filter.y + y as i32 + dy;
+                for &filter in prepared_kernel.iter() {
+                    let filter_start_x = filter.x + x as i32;
+                    let filter_start_y = filter.y + y as i32;
                     let filter_size = filter.size as usize;
 
-                    let py0 = filter_start_y as usize * stride;
+                    let py0 = filter_start_y as usize * arena_stride;
 
                     let mut current_x = 0usize;
 

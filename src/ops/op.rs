@@ -27,6 +27,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::op_type::MorphOp;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::ops::avx::{fast_morph_op_1d_avx, fast_morph_op_3d_avx, fast_morph_op_4d_avx};
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::ops::neon::{fast_morph_op_1d_neon, fast_morph_op_3d_neon, fast_morph_op_4d_neon};
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -61,6 +63,9 @@ pub fn fast_morph_op_1d<const OP_TYPE: u8>() -> fn(&[u8]) -> u8 {
         if std::arch::is_x86_feature_detected!("sse4.1") {
             _dispatcher = fast_morph_op_1d_sse::<OP_TYPE>;
         }
+        if std::arch::is_x86_feature_detected!("avx2") {
+            _dispatcher = fast_morph_op_1d_avx::<OP_TYPE>;
+        }
     }
     _dispatcher
 }
@@ -93,6 +98,9 @@ pub fn fast_morph_op_3d<const OP_TYPE: u8>() -> fn(&[Rgb<u8>]) -> Rgb<u8> {
         if std::arch::is_x86_feature_detected!("sse4.1") {
             _dispatcher = fast_morph_op_3d_sse::<OP_TYPE>;
         }
+        if std::arch::is_x86_feature_detected!("avx2") {
+            _dispatcher = fast_morph_op_3d_avx::<OP_TYPE>;
+        }
     }
     _dispatcher
 }
@@ -124,6 +132,9 @@ pub fn fast_morph_op_4d<const OP_TYPE: u8>() -> fn(&[Rgba<u8>]) -> Rgba<u8> {
     {
         if std::arch::is_x86_feature_detected!("sse4.1") {
             _dispatcher = fast_morph_op_4d_sse::<OP_TYPE>;
+        }
+        if std::arch::is_x86_feature_detected!("avx2") {
+            _dispatcher = fast_morph_op_4d_avx::<OP_TYPE>;
         }
     }
     _dispatcher

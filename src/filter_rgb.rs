@@ -28,11 +28,14 @@
  */
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
-use crate::ImageSize;
 use crate::op_type::MorphOp;
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::ops::neon::{MorphOpFilterRgbNeon2D4Rows, MorphOpFilterRgbNeon2DRow};
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::ops::sse::{MorphOpFilterRgbSse2D4Rows, MorphOpFilterRgbSse2DRow};
 use crate::ops::{MorphOpFilterRgb2D4Rows, MorphOpFilterRgb2DRow};
 use crate::unsafe_slice::UnsafeSlice;
+use crate::ImageSize;
 
 pub struct MorthFilterRgb2DRow {
     pub(crate) handler: Box<dyn MorthOpFilterFlat2DRow + Sync + Send>,
@@ -66,6 +69,12 @@ impl MorthFilterRgb2DRow {
                             MorphOpFilterRgbNeon2DRow::<{ MorphOp::Dilate as u8 }>::default(),
                         );
                     }
+                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                    {
+                        _result = Box::new(
+                            MorphOpFilterRgbSse2DRow::<{ MorphOp::Dilate as u8 }>::default(),
+                        );
+                    }
                     _result
                 }
                 MorphOp::Erode => {
@@ -75,6 +84,12 @@ impl MorthFilterRgb2DRow {
                     {
                         _result = Box::new(
                             MorphOpFilterRgbNeon2DRow::<{ MorphOp::Erode as u8 }>::default(),
+                        );
+                    }
+                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                    {
+                        _result = Box::new(
+                            MorphOpFilterRgbSse2DRow::<{ MorphOp::Erode as u8 }>::default(),
                         );
                     }
                     _result
@@ -116,6 +131,12 @@ impl MorthFilterRgb2D4Rows {
                             MorphOpFilterRgbNeon2D4Rows::<{ MorphOp::Dilate as u8 }>::default(),
                         );
                     }
+                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                    {
+                        _result = Box::new(
+                            MorphOpFilterRgbSse2D4Rows::<{ MorphOp::Dilate as u8 }>::default(),
+                        );
+                    }
                     _result
                 }
                 MorphOp::Erode => {
@@ -125,6 +146,12 @@ impl MorthFilterRgb2D4Rows {
                     {
                         _result = Box::new(
                             MorphOpFilterRgbNeon2D4Rows::<{ MorphOp::Erode as u8 }>::default(),
+                        );
+                    }
+                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                    {
+                        _result = Box::new(
+                            MorphOpFilterRgbSse2D4Rows::<{ MorphOp::Erode as u8 }>::default(),
                         );
                     }
                     _result
