@@ -33,6 +33,73 @@ use std::arch::x86_64::*;
 
 #[inline]
 #[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_pack_x4(ptr: *const u8) -> (__m128i, __m128i, __m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let row1 = _mm_loadu_si128(ptr.add(16) as *const __m128i);
+    let row2 = _mm_loadu_si128(ptr.add(32) as *const __m128i);
+    let row3 = _mm_loadu_si128(ptr.add(48) as *const __m128i);
+    (row0, row1, row2, row3)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_store_pack_x4(ptr: *mut u8, v: (__m128i, __m128i, __m128i, __m128i)) {
+    _mm_storeu_si128(ptr as *mut __m128i, v.0);
+    _mm_storeu_si128(ptr.add(16) as *mut __m128i, v.1);
+    _mm_storeu_si128(ptr.add(32) as *mut __m128i, v.2);
+    _mm_storeu_si128(ptr.add(48) as *mut __m128i, v.3);
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_pack_x3(ptr: *const u8) -> (__m128i, __m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let row1 = _mm_loadu_si128(ptr.add(16) as *const __m128i);
+    let row2 = _mm_loadu_si128(ptr.add(32) as *const __m128i);
+    (row0, row1, row2)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_store_pack_x3(ptr: *mut u8, v: (__m128i, __m128i, __m128i)) {
+    _mm_storeu_si128(ptr as *mut __m128i, v.0);
+    _mm_storeu_si128(ptr.add(16) as *mut __m128i, v.1);
+    _mm_storeu_si128(ptr.add(32) as *mut __m128i, v.2);
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_pack_x2(ptr: *const u8) -> (__m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let row1 = _mm_loadu_si128(ptr.add(16) as *const __m128i);
+    (row0, row1)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_store_pack_x2(ptr: *mut u8, v: (__m128i, __m128i)) {
+    _mm_storeu_si128(ptr as *mut __m128i, v.0);
+    _mm_storeu_si128(ptr.add(16) as *mut __m128i, v.1);
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_load_pack_x1_5(ptr: *const u8) -> (__m128i, __m128i) {
+    let row0 = _mm_loadu_si128(ptr as *const __m128i);
+    let row1 = _mm_loadu_si64(ptr.add(16));
+    (row0, row1)
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+pub unsafe fn _mm_store_pack_x1_5(ptr: *mut u8, v: (__m128i, __m128i)) {
+    _mm_storeu_si128(ptr as *mut __m128i, v.0);
+    let reg1 = v.1;
+    std::ptr::copy_nonoverlapping(&reg1 as *const _ as * const u8, ptr.add(16), 8);
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
 pub unsafe fn _mm_load_deinterleave_rgb(ptr: *const u8) -> (__m128i, __m128i, __m128i) {
     let row0 = _mm_loadu_si128(ptr as *const __m128i);
     let row1 = _mm_loadu_si128(ptr.add(16) as *const __m128i);

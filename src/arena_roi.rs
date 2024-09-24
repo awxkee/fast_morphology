@@ -111,6 +111,7 @@ unsafe fn copy_row_sse(dst: &mut [u8], src: &[u8], start: usize, stride: usize) 
 }
 
 /// Copies ROI from one image to another
+#[allow(clippy::type_complexity)]
 pub fn copy_roi(arena: &mut [u8], roi: &[u8], arena_stride: usize, stride: usize, height: usize) {
     let mut dst = arena;
     let mut src = roi;

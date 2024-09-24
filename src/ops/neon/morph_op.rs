@@ -30,13 +30,13 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 use crate::ops::neon::fast_morph_op_1d_neon;
+use crate::se_scan::ScanPoint;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 #[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
 #[cfg(target_arch = "arm")]
 use std::arch::arm::*;
-use crate::se_scan::ScanPoint;
 
 #[derive(Clone)]
 pub struct MorphOpFilterNeon2DRow<const OP_TYPE: u8> {}
@@ -103,7 +103,6 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterNeon2DRow<OP_TYP
                 .collect::<Vec<_>>();
 
             for x in 0..width {
-
                 let mut index_iter = 0usize;
 
                 for &filter in filter_bounds.iter() {

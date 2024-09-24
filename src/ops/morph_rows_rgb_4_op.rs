@@ -30,6 +30,7 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_3d;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::utils::{rgb_from_slice, write_rgb_to_slice};
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
@@ -74,10 +75,16 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgb2D4Rows<OP_TY
 
             let src = &arena.arena;
 
-            let mut items0 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items1 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items2 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items3 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
+            let window_size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let mut allocated_window_1 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let mut allocated_window_2 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let mut allocated_window_3 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+
+            let items0 = allocated_window_0.as_mut_slice();
+            let items1 = allocated_window_1.as_mut_slice();
+            let items2 = allocated_window_2.as_mut_slice();
+            let items3 = allocated_window_3.as_mut_slice();
 
             for x in 0..width {
                 let mut iter_index = 0usize;

@@ -30,6 +30,7 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_4d;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::utils::{rgba_from_slice, write_rgba_to_slice};
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
@@ -66,8 +67,10 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgba2DRow<OP_TYP
 
         if let Some(arena) = arena {
             let minmax_resolver = fast_morph_op_4d::<OP_TYPE>();
-            let mut items0 =
-                vec![Rgba::dup(base_val); analyzed_se.left_front.element_offsets.len()];
+
+            let window_size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(Rgba::dup(base_val), window_size);
+            let items0 = allocated_window_0.as_mut_slice();
 
             let arena_stride = arena.width * 4;
 

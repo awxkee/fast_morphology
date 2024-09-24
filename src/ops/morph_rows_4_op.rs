@@ -30,6 +30,7 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_1d;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 
@@ -62,12 +63,21 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphFilterFlat2D4Rows<OP_TYP
         };
         let stride = width;
 
-        let mut items0 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-        let mut items1 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-        let mut items2 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-        let mut items3 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-        let mut items4 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-        let mut items5 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
+        let size = analyzed_se.left_front.element_offsets.len();
+
+        let mut allocated_stack0 = SmartAllocator::new(base_val, size);
+        let mut allocated_stack1 = SmartAllocator::new(base_val, size);
+        let mut allocated_stack2 = SmartAllocator::new(base_val, size);
+        let mut allocated_stack3 = SmartAllocator::new(base_val, size);
+        let mut allocated_stack4 = SmartAllocator::new(base_val, size);
+        let mut allocated_stack5 = SmartAllocator::new(base_val, size);
+
+        let items0 = allocated_stack0.as_mut_slice();
+        let items1 = allocated_stack1.as_mut_slice();
+        let items2 = allocated_stack2.as_mut_slice();
+        let items3 = allocated_stack3.as_mut_slice();
+        let items4 = allocated_stack4.as_mut_slice();
+        let items5 = allocated_stack5.as_mut_slice();
 
         let minmax_resolver = fast_morph_op_1d::<OP_TYPE>();
 
@@ -120,12 +130,13 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphFilterFlat2D4Rows<OP_TYP
                     *items5.get_unchecked_mut(index) = new_value5;
                 }
 
-                dst.write(y * stride + x, minmax_resolver(&items0));
-                dst.write((y + 1) * stride + x, minmax_resolver(&items1));
-                dst.write((y + 2) * stride + x, minmax_resolver(&items2));
-                dst.write((y + 3) * stride + x, minmax_resolver(&items3));
-                dst.write((y + 4) * stride + x, minmax_resolver(&items4));
-                dst.write((y + 5) * stride + x, minmax_resolver(&items5));
+                dst.write(y * stride + x, minmax_resolver(
+                    items0));
+                dst.write((y + 1) * stride + x, minmax_resolver(items1));
+                dst.write((y + 2) * stride + x, minmax_resolver(items2));
+                dst.write((y + 3) * stride + x, minmax_resolver(items3));
+                dst.write((y + 4) * stride + x, minmax_resolver(items4));
+                dst.write((y + 5) * stride + x, minmax_resolver(items5));
             }
         } else {
             let max_width = width as i32 - 1;

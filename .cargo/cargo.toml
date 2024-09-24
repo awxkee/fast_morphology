@@ -1,0 +1,5 @@
+[env]
+OPENCV_INCLUDE_PATHS= { value = "C:\\vcpkg\\installed\\x64-windows-static-md\\include", relative = false }
+OPENCV_LINK_PATHS= { value = "C:\\vcpkg\\installed\\x64-windows-static-md\\lib", relative = false }
+OPENCV_LINK_LIBS="opencv_core4.lib,opencv_imgproc4.lib,zlib.lib"
+OPENCV_MSVC_CRT="static"

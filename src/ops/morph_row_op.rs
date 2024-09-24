@@ -30,6 +30,7 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_1d;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 
@@ -66,7 +67,9 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphFilterFlat2DRow<OP_TYPE>
 
             let src = &arena.arena;
 
-            let mut items = vec![base_val; analyzed_se.left_front.element_offsets.len()];
+            let size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(base_val, size);
+            let items = allocated_window_0.as_mut_slice();
 
             let dx = arena.pad_w as i32;
             let dy = arena.pad_h as i32;
@@ -123,7 +126,7 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphFilterFlat2DRow<OP_TYPE>
                     *items.get_unchecked_mut(index) = new_value0;
                 }
 
-                dst.write(y * stride + x, minmax_resolver(&items));
+                dst.write(y * stride + x, minmax_resolver(items));
             }
         } else {
             let op_type: MorphOp = OP_TYPE.into();

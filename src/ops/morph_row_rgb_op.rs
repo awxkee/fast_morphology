@@ -30,6 +30,7 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 use crate::ops::op::fast_morph_op_3d;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::utils::{rgb_from_slice, write_rgb_to_slice};
 use crate::se_scan::ScanPoint;
 use crate::unsafe_slice::UnsafeSlice;
@@ -84,7 +85,9 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgb2DRow<OP_TYPE
 
             let arena_stride = arena.width * 3;
 
-            let mut items0 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
+            let window_size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let items0 = allocated_window_0.as_mut_slice();
 
             for x in 0..width {
                 let mut iter_index = 0usize;

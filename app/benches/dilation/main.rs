@@ -29,10 +29,12 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use fast_morphology::{
-    dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
+    dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
 };
 use image::{EncodableLayout, GenericImageView, ImageReader};
-use opencv::core::{Mat, MatTrait, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC3, CV_8UC4};
+use opencv::core::{
+    Mat, MatTrait, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC1, CV_8UC3, CV_8UC4,
+};
 use opencv::imgproc;
 
 pub fn circle_se(radius: usize) -> Vec<u8> {
@@ -145,6 +147,88 @@ fn exec_bench_rgb(c: &mut Criterion, size: usize) {
     );
 }
 
+fn exec_bench_gray(c: &mut Criterion, size: usize) {
+    let img = ImageReader::open("../assets/fruits.jpg")
+        .unwrap()
+        .decode()
+        .unwrap();
+    let dimensions = img.dimensions();
+    let rgb_image = img.to_luma8();
+    let rgb_bytes = rgb_image.as_bytes();
+
+    let radius_size_7 = size;
+    let se_size_15 = radius_size_7 * 2 + 1;
+    let structuring_element_15 = circle_se(radius_size_7);
+
+    let mut kernel_15 = Mat::new_rows_cols_with_default(
+        se_size_15 as i32,
+        se_size_15 as i32,
+        CV_8U,
+        Scalar::new(0., 0., 0., 0.),
+    )
+    .unwrap();
+    unsafe {
+        for (index, &byte) in structuring_element_15.iter().enumerate() {
+            kernel_15.data_mut().add(index).write(byte);
+        }
+    }
+
+    c.bench_function(
+        format!("FM, Gray Image dilation: SE {}x{}", se_size_15, se_size_15).as_str(),
+        |b| {
+            b.iter(|| {
+                let mut dst_image = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
+                dilate(
+                    rgb_bytes,
+                    &mut dst_image,
+                    ImageSize::new(dimensions.0 as usize, dimensions.1 as usize),
+                    &structuring_element_15,
+                    KernelShape::new(se_size_15, se_size_15),
+                    BorderMode::default(),
+                    MorphologyThreadingPolicy::Adaptive,
+                )
+                .unwrap();
+            })
+        },
+    );
+
+    let mut mat = Mat::new_rows_cols_with_default(
+        dimensions.1 as i32,
+        dimensions.0 as i32,
+        CV_8UC1,
+        Scalar::new(0., 0., 0., 0.),
+    )
+    .unwrap();
+    unsafe {
+        for (index, &byte) in rgb_bytes.iter().enumerate() {
+            mat.data_mut().add(index).write(byte);
+        }
+    }
+
+    c.bench_function(
+        format!(
+            "OpenCV, Gray Image dilation: SE {}x{}",
+            se_size_15, se_size_15
+        )
+        .as_str(),
+        |b| {
+            b.iter(|| {
+                let mut dst_mat = Mat::default();
+                imgproc::dilate(
+                    &mat,
+                    &mut dst_mat,
+                    &kernel_15,
+                    Point::new(-1, -1),
+                    1,
+                    BORDER_REPLICATE,
+                    Scalar::new(0., 0., 0., 0.),
+                )
+                .unwrap();
+            })
+        },
+    );
+}
+
 fn exec_bench_rgba(c: &mut Criterion, size: usize) {
     let img = ImageReader::open("../assets/fruits.jpg")
         .unwrap()
@@ -229,20 +313,26 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
-    opencv::core::set_use_ipp(true).expect("Failed to disable IPP");
+    opencv::core::set_use_ipp(false).expect("Failed to disable IPP");
     opencv::core::set_use_optimized(false).expect("Failed to disable opts");
 
     exec_bench_rgb(c, 4);
-    exec_bench_rgb(c, 7);
-    exec_bench_rgb(c, 10);
-    exec_bench_rgb(c, 20);
-    exec_bench_rgb(c, 30);
+    // exec_bench_rgb(c, 7);
+    // exec_bench_rgb(c, 10);
+    // exec_bench_rgb(c, 20);
+    // exec_bench_rgb(c, 30);
+    //
+    // exec_bench_rgba(c, 4);
+    // exec_bench_rgba(c, 7);
+    // exec_bench_rgba(c, 10);
+    // exec_bench_rgba(c, 20);
+    // exec_bench_rgba(c, 30);
 
-    exec_bench_rgba(c, 4);
-    exec_bench_rgba(c, 7);
-    exec_bench_rgba(c, 10);
-    exec_bench_rgba(c, 20);
-    exec_bench_rgba(c, 30);
+    exec_bench_gray(c, 4);
+    // exec_bench_gray(c, 7);
+    // exec_bench_gray(c, 10);
+    // exec_bench_gray(c, 20);
+    // exec_bench_gray(c, 30);
 }
 
 criterion_group!(benches, criterion_benchmark);

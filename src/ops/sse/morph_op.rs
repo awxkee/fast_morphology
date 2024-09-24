@@ -29,6 +29,7 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
 use crate::ops::sse::op::make_morph_op_1d_sse;
 use crate::unsafe_slice::UnsafeSlice;
@@ -37,6 +38,7 @@ use crate::ImageSize;
 use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
+use crate::se_scan::ScanPoint;
 
 #[derive(Clone)]
 pub struct MorphOpFilterSse2DRow<const OP_TYPE: u8> {}
@@ -105,16 +107,25 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2DRow<OP_TYPE
 
             let fast_morph_op = make_morph_op_1d_sse::<OP_TYPE>();
 
-            let mut items0 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
+            let size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(base_val, size);
+            let items0 = allocated_window_0.as_mut_slice();
+
+            let d_size = ScanPoint::new(dx, dy);
+            let prepared_kernel = analyzed_se
+                .left_front
+                .filter_bounds
+                .iter()
+                .map(|&x| x + d_size)
+                .collect::<Vec<_>>();
 
             for x in 0..width {
-                let filter_bounds = &analyzed_se.left_front.filter_bounds;
 
                 let mut index_iter = 0usize;
 
-                for &filter in filter_bounds.iter() {
-                    let filter_start_x = (filter.x + x as i32 + dx) as usize;
-                    let filter_start_y = (filter.y + y as i32 + dy) as usize;
+                for &filter in prepared_kernel.iter() {
+                    let filter_start_x = (filter.x + x as i32) as usize;
+                    let filter_start_y = (filter.y + y as i32) as usize;
 
                     let filter_size = filter.size as usize;
 

@@ -26,47 +26,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::unsafe_slice::UnsafeSlice;
-use colorutils_rs::{Rgb, Rgba};
 
-#[inline]
-pub fn rgba_from_slice(slice: &[u8]) -> Rgba<u8> {
-    unsafe {
-        let bytes = (slice.as_ptr() as *const u32)
-            .read_unaligned()
-            .to_le_bytes();
-        Rgba::new(bytes[0], bytes[1], bytes[2], bytes[3])
-    }
+pub enum SmartAllocator<T>
+where
+    T: Sized,
+{
+    Small([T; 1000]), // Stack allocation
+    Large(Vec<T>),    // Heap allocation
 }
 
-#[inline]
-pub fn rgb_from_slice(slice: &[u8]) -> Rgb<u8> {
-    unsafe {
-        Rgb::new(
-            *slice.get_unchecked(0),
-            *slice.get_unchecked(1),
-            *slice.get_unchecked(2),
-        )
+impl<T> SmartAllocator<T>
+where
+    T: Copy,
+{
+    pub fn new(base_val: T, size: usize) -> Self {
+        if size < 1000 {
+            // Use stack-allocated array for small sizes
+            SmartAllocator::Small([base_val; 1000])
+        } else {
+            // Use heap-allocated Vec for large sizes
+            SmartAllocator::Large(vec![base_val; size])
+        }
     }
-}
 
-#[inline]
-pub fn write_rgba_to_slice(cell: &UnsafeSlice<u8>, pos: usize, pixel: Rgba<u8>) {
-    unsafe {
-        let ptr = cell.slice.as_ptr().add(pos) as *mut u32;
-        let px = u32::from_le_bytes([pixel.r, pixel.g, pixel.b, pixel.a]);
-        ptr.write_unaligned(px);
-    }
-}
-
-#[inline]
-pub fn write_rgb_to_slice(cell: &UnsafeSlice<u8>, pos: usize, pixel: Rgb<u8>) {
-    unsafe {
-        let first = u16::from_le_bytes([pixel.r, pixel.g]);
-        let v_ptr = cell.slice.as_ptr().add(pos);
-        let ptr0 = v_ptr as *mut u16;
-        ptr0.write_unaligned(first);
-        let ptr1 = v_ptr.add(2) as *mut u8;
-        ptr1.write_unaligned(pixel.b);
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        match self {
+            SmartAllocator::Small(arr) => arr,
+            SmartAllocator::Large(vec) => vec,
+        }
     }
 }

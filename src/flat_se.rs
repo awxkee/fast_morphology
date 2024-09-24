@@ -54,10 +54,7 @@ pub(crate) struct AnalyzedSe {
 }
 
 impl AnalyzedSe {
-    pub fn new(
-        original_se: Vec<u8>,
-        left_front: FlatSe,
-    ) -> AnalyzedSe {
+    pub fn new(original_se: Vec<u8>, left_front: FlatSe) -> AnalyzedSe {
         let is_empty =
             left_front.element_offsets.is_empty() && left_front.element_offsets.is_empty();
         AnalyzedSe {

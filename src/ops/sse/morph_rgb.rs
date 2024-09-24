@@ -29,10 +29,15 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
 use crate::ops::sse::op::make_morph_op_3d_sse;
 use crate::ops::sse::v_load::{
     _mm_load_deinterleave_half_rgb, _mm_load_deinterleave_quart_rgb, _mm_load_deinterleave_rgb,
+};
+use crate::ops::sse::{
+    _mm_load_pack_x1_5, _mm_load_pack_x2, _mm_load_pack_x3, _mm_load_pack_x4, _mm_store_pack_x1_5,
+    _mm_store_pack_x2, _mm_store_pack_x3, _mm_store_pack_x4,
 };
 use crate::ops::utils::write_rgb_to_slice;
 use crate::unsafe_slice::UnsafeSlice;
@@ -87,7 +92,9 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2DRow<OP_T
         if let Some(arena) = arena {
             let minmax_resolver = make_morph_op_3d_sse::<OP_TYPE>();
 
-            let mut items0 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
+            let window_size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let items0 = allocated_window_0.as_mut_slice();
 
             let arena_stride = arena.width * 3;
 
@@ -115,15 +122,14 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2DRow<OP_T
                         let px = (filter_start_x + current_x as i32) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = _mm_load_deinterleave_rgb(current0.as_ptr());
 
-                        *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value0.0),
-                            det_op(new_value0.1),
-                            det_op(new_value0.2),
+                        let new_value0 = _mm_load_pack_x3(current0.as_ptr());
+                        _mm_store_pack_x3(
+                            items0.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value0,
                         );
 
-                        iter_index += 1;
+                        iter_index += 16;
 
                         current_x += 16;
                     }
@@ -132,35 +138,15 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2DRow<OP_T
                         let px = (filter_start_x + current_x as i32) as usize * 3;
                         let base_offset_0 = py0 + px;
                         let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 =
-                            _mm_load_deinterleave_half_rgb(current0.as_ptr(), base_val);
+                        let new_value0 = _mm_load_pack_x1_5(current0.as_ptr());
 
-                        *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value0.0),
-                            det_op(new_value0.1),
-                            det_op(new_value0.2),
+                        _mm_store_pack_x1_5(
+                            items0.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value0,
                         );
-
-                        iter_index += 1;
+                        iter_index += 8;
 
                         current_x += 8;
-                    }
-
-                    while current_x + 4 < filter_size {
-                        let px = (filter_start_x + current_x as i32) as usize * 3;
-                        let base_offset_0 = py0 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 =
-                            _mm_load_deinterleave_quart_rgb(current0.as_ptr(), base_val);
-
-                        *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value0.0),
-                            det_op(new_value0.1),
-                            det_op(new_value0.2),
-                        );
-                        iter_index += 1;
-
-                        current_x += 4;
                     }
 
                     while current_x < filter_size {

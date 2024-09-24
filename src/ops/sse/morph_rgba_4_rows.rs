@@ -29,6 +29,7 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
 use crate::ops::sse::op::make_morph_op_4d_sse;
 use crate::ops::sse::v_load::{
@@ -38,9 +39,10 @@ use crate::ops::utils::write_rgba_to_slice;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 use colorutils_rs::Rgba;
-use std::arch::x86_64::{
-    _mm_extract_epi32, _mm_insert_epi32, _mm_max_epu8, _mm_min_epu8, _mm_set1_epi8, _mm_setr_epi8,
-};
+#[cfg(target_arch = "x86")]
+use std::arch::x86::*;
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
 
 #[derive(Clone)]
 pub struct MorphOpFilterRgbaSse2D4Rows<const OP_TYPE: u8> {}
@@ -86,14 +88,16 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbaSse2D4Rows<O
         if let Some(arena) = arena {
             let morph_op_resolver = make_morph_op_4d_sse::<OP_TYPE>();
 
-            let mut items0 =
-                vec![Rgba::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items1 =
-                vec![Rgba::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items2 =
-                vec![Rgba::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items3 =
-                vec![Rgba::dup(base_val); analyzed_se.left_front.element_offsets.len()];
+            let window_size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(Rgba::dup(base_val), window_size);
+            let mut allocated_window_1 = SmartAllocator::new(Rgba::dup(base_val), window_size);
+            let mut allocated_window_2 = SmartAllocator::new(Rgba::dup(base_val), window_size);
+            let mut allocated_window_3 = SmartAllocator::new(Rgba::dup(base_val), window_size);
+
+            let items0 = allocated_window_0.as_mut_slice();
+            let items1 = allocated_window_1.as_mut_slice();
+            let items2 = allocated_window_2.as_mut_slice();
+            let items3 = allocated_window_3.as_mut_slice();
 
             let arena_stride = arena.width * 4;
 

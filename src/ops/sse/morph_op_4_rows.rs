@@ -29,8 +29,10 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
 use crate::ops::sse::op::make_morph_op_1d_sse;
+use crate::se_scan::ScanPoint;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 #[cfg(target_arch = "x86")]
@@ -105,21 +107,36 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2D4Rows<OP_TY
             let dx = arena.pad_w as i32;
             let dy = arena.pad_h as i32;
 
-            let mut items0 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-            let mut items1 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-            let mut items2 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-            let mut items3 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-            let mut items4 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
-            let mut items5 = vec![base_val; analyzed_se.left_front.element_offsets.len()];
+            let size = analyzed_se.left_front.element_offsets.len();
+
+            let mut allocated_stack0 = SmartAllocator::new(base_val, size);
+            let mut allocated_stack1 = SmartAllocator::new(base_val, size);
+            let mut allocated_stack2 = SmartAllocator::new(base_val, size);
+            let mut allocated_stack3 = SmartAllocator::new(base_val, size);
+            let mut allocated_stack4 = SmartAllocator::new(base_val, size);
+            let mut allocated_stack5 = SmartAllocator::new(base_val, size);
+
+            let items0 = allocated_stack0.as_mut_slice();
+            let items1 = allocated_stack1.as_mut_slice();
+            let items2 = allocated_stack2.as_mut_slice();
+            let items3 = allocated_stack3.as_mut_slice();
+            let items4 = allocated_stack4.as_mut_slice();
+            let items5 = allocated_stack5.as_mut_slice();
+
+            let d_size = ScanPoint::new(dx, dy);
+            let prepared_kernel = analyzed_se
+                .left_front
+                .filter_bounds
+                .iter()
+                .map(|&x| x + d_size)
+                .collect::<Vec<_>>();
 
             for x in 0..width {
-                let filter_bounds = &analyzed_se.left_front.filter_bounds;
-
                 let mut index_iter = 0usize;
 
-                for &filter in filter_bounds.iter() {
-                    let filter_start_x = (filter.x + x as i32 + dx) as usize;
-                    let filter_start_y = (filter.y + y as i32 + dy) as usize;
+                for &filter in prepared_kernel.iter() {
+                    let filter_start_x = (filter.x + x as i32) as usize;
+                    let filter_start_y = (filter.y + y as i32) as usize;
 
                     let filter_size = filter.size as usize;
 
@@ -153,14 +170,32 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2D4Rows<OP_TY
                         let current5 = src.get_unchecked(base_offset_5..);
                         let new_value5 = _mm_loadu_si128(current5.as_ptr() as *const __m128i);
 
-                        *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
-                        *items1.get_unchecked_mut(index_iter) = across_vec_decision(new_value1);
-                        *items2.get_unchecked_mut(index_iter) = across_vec_decision(new_value2);
-                        *items3.get_unchecked_mut(index_iter) = across_vec_decision(new_value3);
-                        *items4.get_unchecked_mut(index_iter) = across_vec_decision(new_value4);
-                        *items5.get_unchecked_mut(index_iter) = across_vec_decision(new_value5);
+                        _mm_storeu_si128(
+                            items0.get_unchecked_mut(index_iter..).as_mut_ptr() as *mut __m128i,
+                            new_value0,
+                        );
+                        _mm_storeu_si128(
+                            items1.get_unchecked_mut(index_iter..).as_mut_ptr() as *mut __m128i,
+                            new_value1,
+                        );
+                        _mm_storeu_si128(
+                            items2.get_unchecked_mut(index_iter..).as_mut_ptr() as *mut __m128i,
+                            new_value2,
+                        );
+                        _mm_storeu_si128(
+                            items3.get_unchecked_mut(index_iter..).as_mut_ptr() as *mut __m128i,
+                            new_value3,
+                        );
+                        _mm_storeu_si128(
+                            items4.get_unchecked_mut(index_iter..).as_mut_ptr() as *mut __m128i,
+                            new_value4,
+                        );
+                        _mm_storeu_si128(
+                            items5.get_unchecked_mut(index_iter..).as_mut_ptr() as *mut __m128i,
+                            new_value5,
+                        );
 
-                        index_iter += 1;
+                        index_iter += 16;
 
                         current_x += 16;
                     }
@@ -186,14 +221,37 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2D4Rows<OP_TY
                         let current5 = src.get_unchecked(base_offset_5..);
                         let new_value5 = _mm_or_si128(_mm_loadu_si64(current5.as_ptr()), upper_fix);
 
-                        *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
-                        *items1.get_unchecked_mut(index_iter) = across_vec_decision(new_value1);
-                        *items2.get_unchecked_mut(index_iter) = across_vec_decision(new_value2);
-                        *items3.get_unchecked_mut(index_iter) = across_vec_decision(new_value3);
-                        *items4.get_unchecked_mut(index_iter) = across_vec_decision(new_value4);
-                        *items5.get_unchecked_mut(index_iter) = across_vec_decision(new_value5);
-
-                        index_iter += 1;
+                        std::ptr::copy_nonoverlapping(
+                            &new_value0 as *const _ as *const u8,
+                            items0.get_unchecked_mut(index_iter..).as_mut_ptr(),
+                            8,
+                        );
+                        std::ptr::copy_nonoverlapping(
+                            &new_value1 as *const _ as *const u8,
+                            items1.get_unchecked_mut(index_iter..).as_mut_ptr(),
+                            8,
+                        );
+                        std::ptr::copy_nonoverlapping(
+                            &new_value2 as *const _ as *const u8,
+                            items2.get_unchecked_mut(index_iter..).as_mut_ptr(),
+                            8,
+                        );
+                        std::ptr::copy_nonoverlapping(
+                            &new_value3 as *const _ as *const u8,
+                            items3.get_unchecked_mut(index_iter..).as_mut_ptr(),
+                            8,
+                        );
+                        std::ptr::copy_nonoverlapping(
+                            &new_value4 as *const _ as *const u8,
+                            items4.get_unchecked_mut(index_iter..).as_mut_ptr(),
+                            8,
+                        );
+                        std::ptr::copy_nonoverlapping(
+                            &new_value5 as *const _ as *const u8,
+                            items5.get_unchecked_mut(index_iter..).as_mut_ptr(),
+                            8,
+                        );
+                        index_iter += 8;
 
                         current_x += 8;
                     }
@@ -213,39 +271,21 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2D4Rows<OP_TY
                         let current3 = src.get_unchecked(base_offset_3..);
                         let current4 = src.get_unchecked(base_offset_4..);
                         let current5 = src.get_unchecked(base_offset_5..);
-                        let new_value0 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current0.as_ptr() as *const i32).read_unaligned(),
-                        );
-                        let new_value1 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current1.as_ptr() as *const i32).read_unaligned(),
-                        );
-                        let new_value2 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current2.as_ptr() as *const i32).read_unaligned(),
-                        );
-                        let new_value3 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current3.as_ptr() as *const i32).read_unaligned(),
-                        );
-                        let new_value4 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current4.as_ptr() as *const i32).read_unaligned(),
-                        );
-                        let new_value5 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current5.as_ptr() as *const i32).read_unaligned(),
-                        );
 
-                        *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
-                        *items1.get_unchecked_mut(index_iter) = across_vec_decision(new_value1);
-                        *items2.get_unchecked_mut(index_iter) = across_vec_decision(new_value2);
-                        *items3.get_unchecked_mut(index_iter) = across_vec_decision(new_value3);
-                        *items4.get_unchecked_mut(index_iter) = across_vec_decision(new_value4);
-                        *items5.get_unchecked_mut(index_iter) = across_vec_decision(new_value5);
+                        (items0.as_mut_ptr().add(index_iter) as *mut u32)
+                            .write_unaligned((current0.as_ptr() as *const u32).read_unaligned());
+                        (items1.as_mut_ptr().add(index_iter) as *mut u32)
+                            .write_unaligned((current1.as_ptr() as *const u32).read_unaligned());
+                        (items2.as_mut_ptr().add(index_iter) as *mut u32)
+                            .write_unaligned((current2.as_ptr() as *const u32).read_unaligned());
+                        (items3.as_mut_ptr().add(index_iter) as *mut u32)
+                            .write_unaligned((current3.as_ptr() as *const u32).read_unaligned());
+                        (items4.as_mut_ptr().add(index_iter) as *mut u32)
+                            .write_unaligned((current4.as_ptr() as *const u32).read_unaligned());
+                        (items5.as_mut_ptr().add(index_iter) as *mut u32)
+                            .write_unaligned((current5.as_ptr() as *const u32).read_unaligned());
 
-                        index_iter += 1;
+                        index_iter += 4;
 
                         current_x += 4;
                     }

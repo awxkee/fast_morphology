@@ -37,6 +37,7 @@ mod morph_rows_rgba_4_op;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 pub mod neon;
 mod op;
+mod smart_allocator;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub mod sse;
 mod utils;

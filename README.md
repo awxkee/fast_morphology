@@ -51,6 +51,21 @@ M3 Pro, NEON dilation RGBA image 2731x4096 with specified kernel size
 | FM     | 48.25ms | 81.12ms | 111.79ms | 274.01ms | 515.54ms |
 | OpenCV | 30.22ms | 72.63ms | 138.69ms | 555.51ms | 1.19s    |
 
+SSE dilation RGB image 2731x4096 with specified kernel size
+
+| SE     | 9x9     | 15x15    | 21x21    | 41x41    | 61x61  |
+|--------|---------|----------|----------|----------|--------|
+| FM     | 84.19ms | 186.53ms | 254.70ms | 673.45ms | 1.37s  |
+| OpenCV | 28.61ms | 62.43ms  | 114.80ms | 428.87ms | 1.16ms |
+
+SSE dilation RGBA image 2731x4096 with specified kernel size
+
+| SE     | 9x9      | 15x15    | 21x21    | 41x41    | 61x61  |
+|--------|----------|----------|----------|----------|--------|
+| FM     | 109.37ms | 229.11ms | 329.31ms | 981.48ms | 2.05ms |
+| OpenCV | 39.20ms  | 76.09ms  | 149.12ms | 569.36ms | 1.33s  |
+
+
 This project is licensed under either of
 
 - BSD-3-Clause License (see [LICENSE](LICENSE.md))

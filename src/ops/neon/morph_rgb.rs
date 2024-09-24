@@ -32,6 +32,7 @@ use crate::op_type::MorphOp;
 use crate::ops::neon::op::fast_morph_op_3d_neon;
 use crate::ops::neon::utils::vld3h_u8;
 use crate::ops::utils::write_rgb_to_slice;
+use crate::se_scan::ScanPoint;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 use colorutils_rs::Rgb;
@@ -39,7 +40,6 @@ use colorutils_rs::Rgb;
 use std::arch::aarch64::*;
 #[cfg(target_arch = "arm")]
 use std::arch::arm::*;
-use crate::se_scan::ScanPoint;
 
 #[derive(Clone)]
 pub struct MorphOpFilterRgbNeon2DRow<const OP_TYPE: u8> {}
@@ -110,7 +110,6 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbNeon2DRow<OP_
                 .collect::<Vec<_>>();
 
             for x in 0..width {
-
                 let mut iter_index = 0usize;
 
                 for filter in filter_bounds.iter() {

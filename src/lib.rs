@@ -29,6 +29,7 @@
 extern crate core;
 
 mod arena;
+mod arena_roi;
 mod border_mode;
 mod filter;
 mod filter_op_declare;
@@ -46,7 +47,6 @@ mod se_scan;
 mod structuring_element;
 mod thread_policy;
 mod unsafe_slice;
-mod arena_roi;
 
 pub use border_mode::BorderMode;
 pub use img_size::ImageSize;

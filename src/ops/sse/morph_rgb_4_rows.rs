@@ -29,12 +29,15 @@
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
+use crate::ops::smart_allocator::SmartAllocator;
 use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
 use crate::ops::sse::op::make_morph_op_3d_sse;
 use crate::ops::sse::v_load::{
     _mm_load_deinterleave_half_rgb, _mm_load_deinterleave_quart_rgb, _mm_load_deinterleave_rgb,
 };
+use crate::ops::sse::{_mm_load_pack_x1_5, _mm_load_pack_x3, _mm_store_pack_x1_5, _mm_store_pack_x3};
 use crate::ops::utils::write_rgb_to_slice;
+use crate::se_scan::ScanPoint;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 use colorutils_rs::Rgb;
@@ -84,10 +87,16 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2D4Rows<OP
         };
 
         if let Some(arena) = arena {
-            let mut items0 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items1 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items2 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
-            let mut items3 = vec![Rgb::dup(base_val); analyzed_se.left_front.element_offsets.len()];
+            let window_size = analyzed_se.left_front.element_offsets.len();
+            let mut allocated_window_0 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let mut allocated_window_1 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let mut allocated_window_2 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+            let mut allocated_window_3 = SmartAllocator::new(Rgb::dup(base_val), window_size);
+
+            let items0 = allocated_window_0.as_mut_slice();
+            let items1 = allocated_window_1.as_mut_slice();
+            let items2 = allocated_window_2.as_mut_slice();
+            let items3 = allocated_window_3.as_mut_slice();
 
             let minmax_resolver = make_morph_op_3d_sse::<OP_TYPE>();
 
@@ -98,14 +107,21 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2D4Rows<OP
             let dx = arena.pad_w as i32;
             let dy = arena.pad_h as i32;
 
+            let d_size = ScanPoint::new(dx, dy);
+            let prepared_kernel = analyzed_se
+                .left_front
+                .filter_bounds
+                .iter()
+                .map(|&x| x + d_size)
+                .collect::<Vec<_>>();
+
             for x in 0..width {
-                let filter_bounds = &analyzed_se.left_front.filter_bounds;
 
                 let mut iter_index = 0usize;
 
-                for filter in filter_bounds.iter() {
-                    let filter_start_x = filter.x + x as i32 + dx;
-                    let filter_start_y = filter.y + y as i32 + dy;
+                for filter in prepared_kernel.iter() {
+                    let filter_start_x = filter.x + x as i32;
+                    let filter_start_y = filter.y + y as i32;
 
                     let filter_size = filter.size as usize;
 
@@ -128,33 +144,29 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2D4Rows<OP
                         let current2 = src.get_unchecked(base_offset_2..);
                         let current3 = src.get_unchecked(base_offset_3..);
 
-                        let new_value0 = _mm_load_deinterleave_rgb(current0.as_ptr());
-                        let new_value1 = _mm_load_deinterleave_rgb(current1.as_ptr());
-                        let new_value2 = _mm_load_deinterleave_rgb(current2.as_ptr());
-                        let new_value3 = _mm_load_deinterleave_rgb(current3.as_ptr());
+                        let new_value0 = _mm_load_pack_x3(current0.as_ptr());
+                        let new_value1 = _mm_load_pack_x3(current1.as_ptr());
+                        let new_value2 = _mm_load_pack_x3(current2.as_ptr());
+                        let new_value3 = _mm_load_pack_x3(current3.as_ptr());
 
-                        *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value0.0),
-                            det_op(new_value0.1),
-                            det_op(new_value0.2),
+                        _mm_store_pack_x3(
+                            items0.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value0,
                         );
-                        *items1.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value1.0),
-                            det_op(new_value1.1),
-                            det_op(new_value1.2),
+                        _mm_store_pack_x3(
+                            items1.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value1,
                         );
-                        *items2.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value2.0),
-                            det_op(new_value2.1),
-                            det_op(new_value2.2),
+                        _mm_store_pack_x3(
+                            items2.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value2,
                         );
-                        *items3.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value3.0),
-                            det_op(new_value3.1),
-                            det_op(new_value3.2),
+                        _mm_store_pack_x3(
+                            items3.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value3,
                         );
 
-                        iter_index += 1;
+                        iter_index += 16;
 
                         current_x += 16;
                     }
@@ -170,84 +182,30 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterRgbSse2D4Rows<OP
                         let current2 = src.get_unchecked(base_offset_2..);
                         let current3 = src.get_unchecked(base_offset_3..);
 
-                        let new_value0 =
-                            _mm_load_deinterleave_half_rgb(current0.as_ptr(), base_val);
-                        let new_value1 =
-                            _mm_load_deinterleave_half_rgb(current1.as_ptr(), base_val);
-                        let new_value2 =
-                            _mm_load_deinterleave_half_rgb(current2.as_ptr(), base_val);
-                        let new_value3 =
-                            _mm_load_deinterleave_half_rgb(current3.as_ptr(), base_val);
+                        let new_value0 = _mm_load_pack_x1_5(current0.as_ptr());
+                        let new_value1 = _mm_load_pack_x1_5(current1.as_ptr());
+                        let new_value2 = _mm_load_pack_x1_5(current2.as_ptr());
+                        let new_value3 = _mm_load_pack_x1_5(current3.as_ptr());
 
-                        *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value0.0),
-                            det_op(new_value0.1),
-                            det_op(new_value0.2),
+                        _mm_store_pack_x1_5(
+                            items0.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value0,
                         );
-                        *items1.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value1.0),
-                            det_op(new_value1.1),
-                            det_op(new_value1.2),
+                        _mm_store_pack_x1_5(
+                            items1.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value1,
                         );
-                        *items2.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value2.0),
-                            det_op(new_value2.1),
-                            det_op(new_value2.2),
+                        _mm_store_pack_x1_5(
+                            items2.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value2,
                         );
-                        *items3.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value3.0),
-                            det_op(new_value3.1),
-                            det_op(new_value3.2),
+                        _mm_store_pack_x1_5(
+                            items3.get_unchecked_mut(iter_index..).as_mut_ptr() as *mut u8,
+                            new_value3,
                         );
-                        iter_index += 1;
+                        iter_index += 8;
 
                         current_x += 8;
-                    }
-
-                    while current_x + 4 < filter_size {
-                        let px = (filter_start_x + current_x as i32) as usize * 3;
-                        let base_offset_0 = py0 + px;
-                        let base_offset_1 = py1 + px;
-                        let base_offset_2 = py2 + px;
-                        let base_offset_3 = py3 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let current1 = src.get_unchecked(base_offset_1..);
-                        let current2 = src.get_unchecked(base_offset_2..);
-                        let current3 = src.get_unchecked(base_offset_3..);
-
-                        let new_value0 =
-                            _mm_load_deinterleave_quart_rgb(current0.as_ptr(), base_val);
-                        let new_value1 =
-                            _mm_load_deinterleave_quart_rgb(current1.as_ptr(), base_val);
-                        let new_value2 =
-                            _mm_load_deinterleave_quart_rgb(current2.as_ptr(), base_val);
-                        let new_value3 =
-                            _mm_load_deinterleave_quart_rgb(current3.as_ptr(), base_val);
-
-                        *items0.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value0.0),
-                            det_op(new_value0.1),
-                            det_op(new_value0.2),
-                        );
-                        *items1.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value1.0),
-                            det_op(new_value1.1),
-                            det_op(new_value1.2),
-                        );
-                        *items2.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value2.0),
-                            det_op(new_value2.1),
-                            det_op(new_value2.2),
-                        );
-                        *items3.get_unchecked_mut(iter_index) = Rgb::new(
-                            det_op(new_value3.0),
-                            det_op(new_value3.1),
-                            det_op(new_value3.2),
-                        );
-
-                        iter_index += 1;
-
-                        current_x += 4;
                     }
 
                     while current_x < filter_size {
