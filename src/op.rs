@@ -349,6 +349,48 @@ pub fn morphology(
             border_mode,
             threading_policy,
         ),
+        MorphExOp::Closing => {
+            let mut transient = vec![0u8; dst.len()];
+            erode(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            dilate(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
+        MorphExOp::Opening => {
+            let mut transient = vec![0u8; dst.len()];
+            dilate(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            erode(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
     }
 }
 
@@ -394,6 +436,48 @@ pub fn morphology_rgb(
             border_mode,
             threading_policy,
         ),
+        MorphExOp::Closing => {
+            let mut transient = vec![0u8; dst.len()];
+            erode_rgb(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            dilate_rgb(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
+        MorphExOp::Opening => {
+            let mut transient = vec![0u8; dst.len()];
+            dilate_rgb(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            erode_rgb(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
     }
 }
 
@@ -439,6 +523,48 @@ pub fn morphology_gray_alpha(
             border_mode,
             threading_policy,
         ),
+        MorphExOp::Closing => {
+            let mut transient = vec![0u8; dst.len()];
+            erode_gray_alpha(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            dilate_gray_alpha(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
+        MorphExOp::Opening => {
+            let mut transient = vec![0u8; dst.len()];
+            dilate_gray_alpha(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            erode_gray_alpha(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
     }
 }
 
@@ -484,5 +610,47 @@ pub fn morphology_rgba(
             border_mode,
             threading_policy,
         ),
+        MorphExOp::Closing => {
+            let mut transient = vec![0u8; dst.len()];
+            erode_rgba(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            dilate_rgba(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
+        MorphExOp::Opening => {
+            let mut transient = vec![0u8; dst.len()];
+            dilate_rgba(
+                src,
+                &mut transient,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            erode_rgba(
+                &transient,
+                dst,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )
+        }
     }
 }

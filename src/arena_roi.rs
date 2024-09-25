@@ -110,6 +110,62 @@ unsafe fn copy_row_sse(dst: &mut [u8], src: &[u8], start: usize, stride: usize) 
     _cx
 }
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[target_feature(enable = "avx2")]
+unsafe fn copy_row_avx(dst: &mut [u8], src: &[u8], start: usize, stride: usize) -> usize {
+    let mut _cx = start;
+
+    while _cx + 128 < stride {
+        let offset_ptr = src.as_ptr().add(_cx);
+        let row0 = _mm256_loadu_si256(offset_ptr as *const __m256i);
+        let row1 = _mm256_loadu_si256(offset_ptr.add(32) as *const __m256i);
+        let row2 = _mm256_loadu_si256(offset_ptr.add(64) as *const __m256i);
+        let row3 = _mm256_loadu_si256(offset_ptr.add(96) as *const __m256i);
+        let dst_offset_ptr = dst.as_mut_ptr().add(_cx);
+        _mm256_storeu_si256(dst_offset_ptr as *mut __m256i, row0);
+        _mm256_storeu_si256(dst_offset_ptr.add(32) as *mut __m256i, row1);
+        _mm256_storeu_si256(dst_offset_ptr.add(64) as *mut __m256i, row2);
+        _mm256_storeu_si256(dst_offset_ptr.add(96) as *mut __m256i, row3);
+        _cx += 128;
+    }
+
+    while _cx + 64 < stride {
+        let offset_ptr = src.as_ptr().add(_cx);
+        let row0 = _mm256_loadu_si256(offset_ptr as *const __m256i);
+        let row1 = _mm256_loadu_si256(offset_ptr.add(32) as *const __m256i);
+        let dst_offset_ptr = dst.as_mut_ptr().add(_cx);
+        _mm256_storeu_si256(dst_offset_ptr as *mut __m256i, row0);
+        _mm256_storeu_si256(dst_offset_ptr.add(32) as *mut __m256i, row1);
+        _cx += 64;
+    }
+
+    while _cx + 32 < stride {
+        let offset_ptr = src.as_ptr().add(_cx);
+        let row0 = _mm256_loadu_si256(offset_ptr as *const __m256i);
+        let dst_offset_ptr = dst.as_mut_ptr().add(_cx);
+        _mm256_storeu_si256(dst_offset_ptr as *mut __m256i, row0);
+        _cx += 32;
+    }
+
+    while _cx + 16 < stride {
+        let offset_ptr = src.as_ptr().add(_cx);
+        let row0 = _mm_loadu_si128(offset_ptr as *const __m128i);
+        let dst_offset_ptr = dst.as_mut_ptr().add(_cx);
+        _mm_storeu_si128(dst_offset_ptr as *mut __m128i, row0);
+        _cx += 16;
+    }
+
+    while _cx + 8 < stride {
+        let offset_ptr = src.as_ptr().add(_cx);
+        let row0 = _mm_loadu_si64(offset_ptr);
+        let dst_offset_ptr = dst.as_mut_ptr().add(_cx);
+        std::ptr::copy_nonoverlapping(&row0 as *const _ as *const u8, dst_offset_ptr, 8);
+        _cx += 8;
+    }
+
+    _cx
+}
+
 /// Copies ROI from one image to another
 #[allow(clippy::type_complexity)]
 pub fn copy_roi<T>(arena: &mut [T], roi: &[T], arena_stride: usize, stride: usize, height: usize)
@@ -128,6 +184,9 @@ where
         {
             if std::arch::is_x86_feature_detected!("sse4.1") {
                 _row_handle = Some(copy_row_sse);
+            }
+            if std::arch::is_x86_feature_detected!("avx2") {
+                _row_handle = Some(copy_row_avx);
             }
         }
         unsafe {

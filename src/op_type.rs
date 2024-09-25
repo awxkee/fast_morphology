@@ -49,4 +49,6 @@ impl From<u8> for MorphOp {
 pub enum MorphExOp {
     Dilate = 0,
     Erode = 1,
+    Closing = 2,
+    Opening = 3,
 }

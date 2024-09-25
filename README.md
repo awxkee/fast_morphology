@@ -1,7 +1,13 @@
 # Fast morphology in pure Rust
 
 This crate provides fast 2D arbitrary shaped structuring element for planar, RGB and RGBA images.
+Library provides high performance erosion, dilation, closing and opening.
+
 In most cases performance when implemented fully in hardware faster than OpenCV.
+
+If you are not familiar read the [OpenCV doc](https://docs.opencv.org/4.x/d9/d61/tutorial_py_morphological_ops.html)
+
+### Example
 
 ```rust
 dilate_rgb(

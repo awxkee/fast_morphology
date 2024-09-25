@@ -137,7 +137,7 @@ where
             let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut f32;
 
             _mm_storeu_ps(v_dst, row0);
-            _mm_storeu_ps(v_dst.add(8), row1);
+            _mm_storeu_ps(v_dst.add(4), row1);
 
             _cx += 8;
         }
@@ -156,23 +156,6 @@ where
             _mm_storeu_ps(v_dst, row0);
 
             _cx += 4;
-        }
-
-        while _cx + 2 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
-            let mut row0 = _mm_castsi128_ps(_mm_loadu_si64(ptr0 as *const u8));
-
-            for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
-                let new_row0 = _mm_castsi128_ps(_mm_loadu_si64(ptr_d as *const u8));
-                row0 = decision(row0, new_row0);
-            }
-
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
-            let v0 = _mm_castps_si128(row0);
-            std::ptr::copy_nonoverlapping(&v0 as *const _ as *const u8, v_dst, 8);
-
-            _cx += 2;
         }
 
         for x in _cx..width {

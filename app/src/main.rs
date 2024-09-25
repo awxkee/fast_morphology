@@ -2,7 +2,7 @@ use fast_morphology::{
     dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, BorderMode, ImageSize,
     KernelShape, MorphExOp, MorphologyThreadingPolicy,
 };
-use image::{EncodableLayout, GenericImageView, ImageReader};
+use image::{DynamicImage, EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
     Mat, MatTrait, MatTraitConstManual, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC3,
 };
@@ -66,7 +66,7 @@ fn gaussian_kernel(size: usize, sigma: f32) -> Vec<Vec<f32>> {
 }
 
 fn main() {
-    let radius_size = 10;
+    let radius_size = 35;
     let mut structuring_element = circle_se(radius_size);
 
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
@@ -223,9 +223,11 @@ fn main() {
 
     println!("opencv exec time {:?}", exec_time.elapsed());
 
+    let exec_time = Instant::now();
+
     let new_image = morphology_image(
         img,
-        MorphExOp::Erode,
+        MorphExOp::Closing,
         &structuring_element,
         KernelShape::new(se_size, se_size),
         BorderMode::default(),
@@ -233,7 +235,11 @@ fn main() {
     )
     .unwrap();
 
-    new_image.save("dilated.jpg").unwrap();
+    println!("morphology_image exec time {:?}", exec_time.elapsed());
+
+    let rollback_img = DynamicImage::ImageRgb8(new_image.to_rgb8());
+
+    rollback_img.save("dilated.jpg").unwrap();
 
     image::save_buffer(
         "converted.png",

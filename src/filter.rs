@@ -30,7 +30,7 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use crate::ops::avx::MorphOpFilterAvx2DRow;
+use crate::ops::avx::{MorphOpFilterAvx2DRow, MorphOpFilterAvx2DRowF32, MorphOpFilterAvx2DRowU16};
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::ops::neon::{
     MorphOpFilterNeon2DRow, MorphOpFilterNeon2DRowF32, MorphOpFilterNeon2DRowU16,
@@ -136,6 +136,11 @@ impl Row2DFilter<f32> for f32 {
                                 MorphOpFilterSse2DRowF32::<{ MorphOp::Dilate as u8 }>::default(),
                             );
                         }
+                        if std::arch::is_x86_feature_detected!("avx2") {
+                            _result = Box::new(
+                                MorphOpFilterAvx2DRowF32::<{ MorphOp::Dilate as u8 }>::default(),
+                            );
+                        }
                     }
                     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
                     {
@@ -153,6 +158,11 @@ impl Row2DFilter<f32> for f32 {
                         if std::arch::is_x86_feature_detected!("sse4.1") {
                             _result = Box::new(
                                 MorphOpFilterSse2DRowF32::<{ MorphOp::Erode as u8 }>::default(),
+                            );
+                        }
+                        if std::arch::is_x86_feature_detected!("avx2") {
+                            _result = Box::new(
+                                MorphOpFilterAvx2DRowF32::<{ MorphOp::Erode as u8 }>::default(),
                             );
                         }
                     }
@@ -183,6 +193,11 @@ impl Row2DFilter<u16> for u16 {
                                 MorphOpFilterSse2DRowU16::<{ MorphOp::Dilate as u8 }>::default(),
                             );
                         }
+                        if std::arch::is_x86_feature_detected!("avx2") {
+                            _result = Box::new(
+                                MorphOpFilterAvx2DRowU16::<{ MorphOp::Dilate as u8 }>::default(),
+                            );
+                        }
                     }
                     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
                     {
@@ -200,6 +215,11 @@ impl Row2DFilter<u16> for u16 {
                         if std::arch::is_x86_feature_detected!("sse4.1") {
                             _result = Box::new(
                                 MorphOpFilterSse2DRowU16::<{ MorphOp::Erode as u8 }>::default(),
+                            );
+                        }
+                        if std::arch::is_x86_feature_detected!("avx2") {
+                            _result = Box::new(
+                                MorphOpFilterAvx2DRowU16::<{ MorphOp::Erode as u8 }>::default(),
                             );
                         }
                     }
