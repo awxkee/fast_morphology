@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#[repr(u8)]
+#[repr(C)]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub(crate) enum MorphOp {
     Dilate = 0,
@@ -42,4 +42,11 @@ impl From<u8> for MorphOp {
             _ => panic!("Not implemented"),
         }
     }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub enum MorphExOp {
+    Dilate = 0,
+    Erode = 1,
 }

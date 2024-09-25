@@ -1,5 +1,6 @@
 use fast_morphology::{
-    dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
+    dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, BorderMode, ImageSize,
+    KernelShape, MorphExOp, MorphologyThreadingPolicy,
 };
 use image::{EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
@@ -65,7 +66,7 @@ fn gaussian_kernel(size: usize, sigma: f32) -> Vec<Vec<f32>> {
 }
 
 fn main() {
-    let radius_size = 55;
+    let radius_size = 10;
     let mut structuring_element = circle_se(radius_size);
 
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
@@ -114,7 +115,7 @@ fn main() {
 
     let image_size = ImageSize::new(dimensions.0 as usize, dimensions.1 as usize);
 
-    dilate(
+    erode(
         &channel_1_src,
         &mut channel_1_dst,
         image_size,
@@ -125,7 +126,7 @@ fn main() {
     )
     .unwrap();
 
-    dilate(
+    erode(
         &channel_2_src,
         &mut channel_2_dst,
         image_size,
@@ -136,7 +137,7 @@ fn main() {
     )
     .unwrap();
 
-    dilate(
+    erode(
         &channel_3_src,
         &mut channel_3_dst,
         image_size,
@@ -166,7 +167,7 @@ fn main() {
     let mut dst = vec![0u8; rgba_image.len()];
 
     let exec_time = Instant::now();
-    dilate_rgba(
+    erode_rgba(
         &rgba_image,
         &mut dst,
         image_size,
@@ -207,7 +208,7 @@ fn main() {
     let exec_time = Instant::now();
 
     let mut dst_mat = Mat::default();
-    imgproc::dilate(
+    imgproc::erode(
         &mat,
         &mut dst_mat,
         &kernel,
@@ -221,6 +222,18 @@ fn main() {
     let open_cv_bytes = dst_mat.data_bytes().unwrap();
 
     println!("opencv exec time {:?}", exec_time.elapsed());
+
+    let new_image = morphology_image(
+        img,
+        MorphExOp::Erode,
+        &structuring_element,
+        KernelShape::new(se_size, se_size),
+        BorderMode::default(),
+        MorphologyThreadingPolicy::default(),
+    )
+    .unwrap();
+
+    new_image.save("dilated.jpg").unwrap();
 
     image::save_buffer(
         "converted.png",

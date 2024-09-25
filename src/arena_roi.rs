@@ -118,7 +118,7 @@ where
 {
     if std::any::type_name::<T>() == "u8" {
         let mut dst: &mut [u8] = unsafe { std::mem::transmute(arena) };
-        let mut src = unsafe { std::mem::transmute(roi) };
+        let mut src = unsafe { std::mem::transmute::<&[T], &[u8]>(roi) };
         let mut _row_handle: Option<unsafe fn(&mut [u8], &[u8], usize, usize) -> usize> = None;
         #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
         {

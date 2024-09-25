@@ -26,6 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::filter::Row2DFilter;
 use crate::morph_base::MorphNativeOp;
 use crate::op_impl::make_morphology;
 use crate::packing::{RgbaPackable, UnpackedRgbaImage};
@@ -41,11 +42,27 @@ pub(crate) unsafe fn make_morphology_rgba<T, const OP_TYPE: u8>(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String>
 where
-    T: RgbaPackable<T> + Default + Copy + Clone + Send + Sync + 'static + MorphNativeOp<T>,
+    T: RgbaPackable<T>
+        + Default
+        + Copy
+        + Clone
+        + Send
+        + Sync
+        + 'static
+        + MorphNativeOp<T>
+        + Row2DFilter<T>,
 {
+    if src.len() != dst.len() || dst.len() != image_size.width * image_size.height * 4 {
+        return Err(format!(
+            "Source and Destination image slice expected to be {} but it was src {}, dst {}",
+            image_size.width * image_size.height * 2,
+            src.len(),
+            dst.len()
+        ));
+    }
     let unpacked = T::unpack(src, image_size);
     let mut dst_unpacked = UnpackedRgbaImage::alloc(image_size);
-    if let Err(err) = make_morphology::<T, OP_TYPE>(
+    make_morphology::<T, OP_TYPE>(
         &unpacked.r_channel,
         &mut dst_unpacked.r_channel,
         image_size,
@@ -53,10 +70,8 @@ where
         structuring_element_size,
         border_mode,
         threading_policy,
-    ) {
-        return Err(err);
-    }
-    if let Err(err) = make_morphology::<T, OP_TYPE>(
+    )?;
+    make_morphology::<T, OP_TYPE>(
         &unpacked.g_channel,
         &mut dst_unpacked.g_channel,
         image_size,
@@ -64,10 +79,8 @@ where
         structuring_element_size,
         border_mode,
         threading_policy,
-    ) {
-        return Err(err);
-    }
-    if let Err(err) = make_morphology::<T, OP_TYPE>(
+    )?;
+    make_morphology::<T, OP_TYPE>(
         &unpacked.b_channel,
         &mut dst_unpacked.b_channel,
         image_size,
@@ -75,10 +88,8 @@ where
         structuring_element_size,
         border_mode,
         threading_policy,
-    ) {
-        return Err(err);
-    }
-    if let Err(err) = make_morphology::<T, OP_TYPE>(
+    )?;
+    make_morphology::<T, OP_TYPE>(
         &unpacked.a_channel,
         &mut dst_unpacked.a_channel,
         image_size,
@@ -86,9 +97,7 @@ where
         structuring_element_size,
         border_mode,
         threading_policy,
-    ) {
-        return Err(err);
-    }
+    )?;
 
     T::pack(&dst_unpacked, dst, image_size);
     Ok(())

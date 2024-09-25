@@ -79,7 +79,7 @@ pub trait RgbaPackable<T> {
 
 impl RgbaPackable<u8> for u8 {
     fn pack(unpacked_rgb_image: &UnpackedRgbaImage<u8>, dst: &mut [u8], image_size: ImageSize) {
-        pack_rgba(&unpacked_rgb_image, dst, image_size)
+        pack_rgba(unpacked_rgb_image, dst, image_size)
     }
 
     fn unpack(src: &[u8], image_size: ImageSize) -> UnpackedRgbaImage<u8> {
@@ -114,12 +114,7 @@ pub trait GrayAlphaPackable<T> {
 
 impl GrayAlphaPackable<u8> for u8 {
     fn pack(unpacked_rgb_image: &UnpackedGrayAlpha<u8>, dst: &mut [u8], image_size: ImageSize) {
-        pack_gray_alpha_naive(
-            &unpacked_rgb_image,
-            dst,
-            image_size.width,
-            image_size.height,
-        )
+        pack_gray_alpha_naive(unpacked_rgb_image, dst, image_size.width, image_size.height)
     }
 
     fn unpack(src: &[u8], image_size: ImageSize) -> UnpackedGrayAlpha<u8> {
@@ -129,12 +124,7 @@ impl GrayAlphaPackable<u8> for u8 {
 
 impl GrayAlphaPackable<u16> for u16 {
     fn pack(unpacked_rgb_image: &UnpackedGrayAlpha<u16>, dst: &mut [u16], image_size: ImageSize) {
-        pack_gray_alpha_naive(
-            &unpacked_rgb_image,
-            dst,
-            image_size.width,
-            image_size.height,
-        )
+        pack_gray_alpha_naive(unpacked_rgb_image, dst, image_size.width, image_size.height)
     }
 
     fn unpack(src: &[u16], image_size: ImageSize) -> UnpackedGrayAlpha<u16> {
@@ -144,12 +134,7 @@ impl GrayAlphaPackable<u16> for u16 {
 
 impl GrayAlphaPackable<f32> for f32 {
     fn pack(unpacked_rgb_image: &UnpackedGrayAlpha<f32>, dst: &mut [f32], image_size: ImageSize) {
-        pack_gray_alpha_naive(
-            &unpacked_rgb_image,
-            dst,
-            image_size.width,
-            image_size.height,
-        )
+        pack_gray_alpha_naive(unpacked_rgb_image, dst, image_size.width, image_size.height)
     }
 
     fn unpack(src: &[f32], image_size: ImageSize) -> UnpackedGrayAlpha<f32> {

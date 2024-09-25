@@ -33,7 +33,7 @@ use crate::morph_rgba::make_morphology_rgba;
 use crate::op_impl::make_morphology;
 use crate::op_type::MorphOp;
 use crate::structuring_element::KernelShape;
-use crate::{ImageSize, MorphologyThreadingPolicy};
+use crate::{ImageSize, MorphExOp, MorphologyThreadingPolicy};
 
 /// Dilate a gray (planar) stored in u16 image
 ///
@@ -304,5 +304,185 @@ pub fn dilate_gray_alpha_u16(
             border_mode,
             threading_policy,
         )
+    }
+}
+
+/// Morphology Gray image with alpha stored in u16
+///
+/// # Arguments
+///
+/// * `src`: Source slice with Gray with alpha data
+/// * `dst`: Destination slice for Gray with alpha data
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_gray_alpha_u16(
+    src: &[u16],
+    dst: &mut [u16],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_gray_alpha_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_gray_alpha_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+    }
+}
+
+/// Morphology Gray image stored in u16
+///
+/// # Arguments
+///
+/// * `src`: Source slice with Gray data
+/// * `dst`: Destination slice for Gray  data
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_gray_u16(
+    src: &[u16],
+    dst: &mut [u16],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+    }
+}
+
+/// Morphology RGB image stored in u16
+///
+/// # Arguments
+///
+/// * `src`: Source slice with RGB data
+/// * `dst`: Destination slice for RGB data
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_rgb_u16(
+    src: &[u16],
+    dst: &mut [u16],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_rgb_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_rgb_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+    }
+}
+
+/// Morphology RGBA image stored in u16
+///
+/// # Arguments
+///
+/// * `src`: Source slice with RGBA data
+/// * `dst`: Destination slice for RGBA data
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_rgba_u16(
+    src: &[u16],
+    dst: &mut [u16],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_rgba_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_rgba_u16(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
     }
 }

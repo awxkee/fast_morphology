@@ -15,6 +15,25 @@ dilate_rgb(
 ).unwrap();
 ```
 
+#### Usage with image crate
+
+```rust
+let img = ImageReader::open("./assets/fruits.jpg")
+          .unwrap()
+          .decode()
+          .unwrap();
+let new_image = morphology_image(
+    img,
+    MorphOp::Dilate,
+    &structuring_element,
+    KernelShape::new(se_size, se_size),
+    BorderMode::default(),
+    MorphologyThreadingPolicy::default(),
+)
+.unwrap();
+new_image.save("dilated.jpg").unwrap();
+```
+
 ## Results
 
 Here is some examply bokeh effect
@@ -22,6 +41,13 @@ Here is some examply bokeh effect
 <p float="left">
     <img src="https://github.com/awxkee/fast_morphology/blob/master/assets/fruits.jpg?raw=true" width="273" height="409">
     <img src="https://github.com/awxkee/fast_morphology/blob/master/assets/bokeh.jpg?raw=true" width="273" height="409">
+</p>
+
+And erosion
+
+<p float="left">
+    <img src="https://github.com/awxkee/fast_morphology/blob/master/assets/fruits.jpg?raw=true" width="273" height="409">
+    <img src="https://github.com/awxkee/fast_morphology/blob/master/assets/erosion.jpg?raw=true" width="273" height="409">
 </p>
 
 # Benchmarking

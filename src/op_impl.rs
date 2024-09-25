@@ -28,7 +28,7 @@
  */
 use crate::arena::make_arena;
 use crate::border_mode::BorderMode;
-use crate::filter::MorthFilterFlat2DRow;
+use crate::filter::Row2DFilter;
 use crate::filter_op_declare::MorthOpFilterFlat2DRow;
 use crate::morph_base::MorphNativeOp;
 use crate::op_type::MorphOp;
@@ -48,7 +48,7 @@ pub(crate) unsafe fn make_morphology<T, const OP_TYPE: u8>(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String>
 where
-    T: Copy + Default + 'static + Send + Sync + MorphNativeOp<T>,
+    T: Copy + Default + 'static + Send + Sync + MorphNativeOp<T> + Row2DFilter<T>,
 {
     if src.len() != dst.len() {
         return Err("Source slice size and destination must match"
@@ -88,7 +88,7 @@ where
 
     let op_type: MorphOp = OP_TYPE.into();
 
-    let filter = Arc::new(MorthFilterFlat2DRow::new(op_type));
+    let filter = Arc::new(T::get_filter(op_type));
 
     let arena = make_arena::<T, 1>(
         src,

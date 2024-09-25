@@ -31,7 +31,7 @@ use crate::morph_gray_alpha::make_morphology_gray_alpha;
 use crate::morph_rgb::make_morphology_rgb;
 use crate::morph_rgba::make_morphology_rgba;
 use crate::op_impl::make_morphology;
-use crate::op_type::MorphOp;
+use crate::op_type::{MorphExOp, MorphOp};
 use crate::structuring_element::KernelShape;
 use crate::{ImageSize, MorphologyThreadingPolicy};
 
@@ -304,5 +304,185 @@ pub fn dilate_gray_alpha(
             border_mode,
             threading_policy,
         )
+    }
+}
+
+/// Morphology a gray (planar) image
+///
+/// # Arguments
+///
+/// * `src`: Source image slice
+/// * `dst`: Destination image slice
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology(
+    src: &[u8],
+    dst: &mut [u8],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+    }
+}
+
+/// Morphology a RGB 8-bit image
+///
+/// # Arguments
+///
+/// * `src`: Source RGB image slice
+/// * `dst`: Destination RGB image slice
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_rgb(
+    src: &[u8],
+    dst: &mut [u8],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_rgb(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_rgb(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+    }
+}
+
+/// Morphology a Planar image with alpha 8-bit image
+///
+/// # Arguments
+///
+/// * `src`: Source image slice
+/// * `dst`: Destination image slice
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_gray_alpha(
+    src: &[u8],
+    dst: &mut [u8],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_gray_alpha(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_gray_alpha(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+    }
+}
+
+/// Morphology a RGBA 8-bit image
+///
+/// # Arguments
+///
+/// * `src`: Source RGBA image slice
+/// * `dst`: Destination RGBA image slice
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_rgba(
+    src: &[u8],
+    dst: &mut [u8],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_rgba(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_rgba(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
     }
 }

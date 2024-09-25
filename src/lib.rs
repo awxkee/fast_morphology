@@ -26,11 +26,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#![allow(clippy::too_many_arguments)]
 extern crate core;
 
 mod arena;
 mod arena_roi;
 mod border_mode;
+#[cfg(feature = "image")]
+mod dynamic_image;
 mod filter;
 mod filter_op_declare;
 mod flat_se;
@@ -52,6 +55,8 @@ mod thread_policy;
 mod unsafe_slice;
 
 pub use border_mode::BorderMode;
+#[cfg(feature = "image")]
+pub use dynamic_image::*;
 pub use img_size::ImageSize;
 pub use op::dilate;
 pub use op::dilate_gray_alpha;
@@ -61,6 +66,10 @@ pub use op::erode;
 pub use op::erode_gray_alpha;
 pub use op::erode_rgb;
 pub use op::erode_rgba;
+pub use op::morphology;
+pub use op::morphology_gray_alpha;
+pub use op::morphology_rgb;
+pub use op::morphology_rgba;
 pub use op_f32::dilate_f32;
 pub use op_f32::dilate_gray_alpha_f32;
 pub use op_f32::dilate_rgb_f32;
@@ -69,6 +78,9 @@ pub use op_f32::erode_f32;
 pub use op_f32::erode_gray_alpha_f32;
 pub use op_f32::erode_rgb_f32;
 pub use op_f32::erode_rgba_f32;
+pub use op_f32::morphology_rgb_f32;
+pub use op_f32::morphology_rgba_f32;
+pub use op_type::MorphExOp;
 pub use op_u16::dilate_gray_alpha_u16;
 pub use op_u16::dilate_rgb_u16;
 pub use op_u16::dilate_rgba_u16;
@@ -77,5 +89,9 @@ pub use op_u16::erode_gray_alpha_u16;
 pub use op_u16::erode_rgb_u16;
 pub use op_u16::erode_rgba_u16;
 pub use op_u16::erode_u16;
+pub use op_u16::morphology_gray_alpha_u16;
+pub use op_u16::morphology_gray_u16;
+pub use op_u16::morphology_rgb_u16;
+pub use op_u16::morphology_rgba_u16;
 pub use structuring_element::KernelShape;
 pub use thread_policy::MorphologyThreadingPolicy;

@@ -321,18 +321,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     exec_bench_rgb(c, 10);
     exec_bench_rgb(c, 20);
     exec_bench_rgb(c, 30);
-    //
-    // exec_bench_rgba(c, 4);
-    // exec_bench_rgba(c, 7);
-    // exec_bench_rgba(c, 10);
-    // exec_bench_rgba(c, 20);
-    // exec_bench_rgba(c, 30);
 
-    // exec_bench_gray(c, 4);
-    // exec_bench_gray(c, 7);
-    // exec_bench_gray(c, 10);
-    // exec_bench_gray(c, 20);
-    // exec_bench_gray(c, 30);
+    exec_bench_rgba(c, 4);
+    exec_bench_rgba(c, 7);
+    exec_bench_rgba(c, 10);
+    exec_bench_rgba(c, 20);
+    exec_bench_rgba(c, 30);
+
+    exec_bench_gray(c, 4);
+    exec_bench_gray(c, 7);
+    exec_bench_gray(c, 10);
+    exec_bench_gray(c, 20);
+    exec_bench_gray(c, 30);
 }
 
 criterion_group!(benches, criterion_benchmark);

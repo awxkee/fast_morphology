@@ -33,9 +33,9 @@ use crate::morph_rgba::make_morphology_rgba;
 use crate::op_impl::make_morphology;
 use crate::op_type::MorphOp;
 use crate::structuring_element::KernelShape;
-use crate::{ImageSize, MorphologyThreadingPolicy};
+use crate::{ImageSize, MorphExOp, MorphologyThreadingPolicy};
 
-/// Dilate a gray (planar) stored in u16 image
+/// Dilate a gray (planar) stored in f32 image
 ///
 /// # Arguments
 ///
@@ -69,7 +69,7 @@ pub fn dilate_f32(
     }
 }
 
-/// Dilate an RGB stored in u16 image
+/// Dilate an RGB stored in f32 image
 ///
 /// # Arguments
 ///
@@ -103,7 +103,7 @@ pub fn dilate_rgb_f32(
     }
 }
 
-/// Erode a gray (planar) stored in u16 image
+/// Erode a gray (planar) stored in f32 image
 ///
 /// # Arguments
 ///
@@ -137,7 +137,7 @@ pub fn erode_f32(
     }
 }
 
-/// Erode an RGB image stored in u16
+/// Erode an RGB image stored in f32
 ///
 /// # Arguments
 ///
@@ -171,7 +171,7 @@ pub fn erode_rgb_f32(
     }
 }
 
-/// Erode an RGBA image stored in u16
+/// Erode an RGBA image stored in f32
 ///
 /// # Arguments
 ///
@@ -205,7 +205,7 @@ pub fn erode_rgba_f32(
     }
 }
 
-/// Dilate an RGBA image stored in u16
+/// Dilate an RGBA image stored in f32
 ///
 /// # Arguments
 ///
@@ -304,5 +304,95 @@ pub fn dilate_gray_alpha_f32(
             border_mode,
             threading_policy,
         )
+    }
+}
+
+/// Morphology an RGBA image stored in f32
+///
+/// # Arguments
+///
+/// * `src`: Source slice with RGBA data
+/// * `dst`: Destination slice for RGBA data
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_rgba_f32(
+    src: &[f32],
+    dst: &mut [f32],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_rgba_f32(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_rgba_f32(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+    }
+}
+
+/// Morphology an RGB image stored in f32
+///
+/// # Arguments
+///
+/// * `src`: Source slice with RGBA data
+/// * `dst`: Destination slice for RGBA data
+/// * `morph_op`: Requested [MorphExOp]
+/// * `image_size`: Image size declared by [ImageSize]
+/// * `structuring_element`: 2D structuring element
+/// * `structuring_element_size`: (W,H) structuring element size
+/// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `threading_policy`: Threads usage policy
+///
+pub fn morphology_rgb_f32(
+    src: &[f32],
+    dst: &mut [f32],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String> {
+    match morph_op {
+        MorphExOp::Dilate => dilate_rgb_f32(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
+        MorphExOp::Erode => erode_rgb_f32(
+            src,
+            dst,
+            image_size,
+            structuring_element,
+            structuring_element_size,
+            border_mode,
+            threading_policy,
+        ),
     }
 }
