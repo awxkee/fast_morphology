@@ -50,17 +50,17 @@ M3 Pro, NEON dilation RGBA image 2731x4096 with specified kernel size
 
 SSE dilation RGB image 2731x4096 with specified kernel size
 
-| SE     | 9x9     | 15x15    | 21x21    | 41x41    | 61x61 |
-|--------|---------|----------|----------|----------|-------|
-| FM     | 84.19ms | 186.53ms | 254.70ms | 673.45ms | 1.37s |
-| OpenCV | 28.61ms | 62.43ms  | 114.80ms | 428.87ms | 1.16s |
+| SE     | 9x9     | 15x15   | 21x21    | 41x41    | 61x61    |
+|--------|---------|---------|----------|----------|----------|
+| FM     | 30.71ms | 34.87ms | 39.93ms  | 81.56ms  | 149.37ms |
+| OpenCV | 27.36ms | 63.05ms | 112.54ms | 419.40ms | 1.08s    |
 
 SSE dilation RGBA image 2731x4096 with specified kernel size
 
-| SE     | 9x9      | 15x15    | 21x21    | 41x41    | 61x61 |
-|--------|----------|----------|----------|----------|-------|
-| FM     | 109.37ms | 229.11ms | 329.31ms | 981.48ms | 2.05s |
-| OpenCV | 39.20ms  | 76.09ms  | 149.12ms | 569.36ms | 1.33s |
+| SE     | 9x9     | 15x15   | 21x21    | 41x41    | 61x61    |
+|--------|---------|---------|----------|----------|----------|
+| FM     | 45.03ms | 49.03ms | 56.40ms  | 114.72ms | 206.05ms |
+| OpenCV | 35.50ms | 79.60ms | 147.32ms | 556.56ms | 1.33s    |
 
 This project is licensed under either of
 

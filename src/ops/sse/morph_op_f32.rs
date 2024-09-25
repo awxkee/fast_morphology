@@ -38,15 +38,15 @@ use std::arch::x86::*;
 use std::arch::x86_64::*;
 
 #[derive(Clone)]
-pub struct MorphOpFilterSse2DRow<const OP_TYPE: u8> {}
+pub struct MorphOpFilterSse2DRowF32<const OP_TYPE: u8> {}
 
-impl<const OP_TYPE: u8> Default for MorphOpFilterSse2DRow<OP_TYPE> {
+impl<const OP_TYPE: u8> Default for MorphOpFilterSse2DRowF32<OP_TYPE> {
     fn default() -> Self {
-        MorphOpFilterSse2DRow {}
+        MorphOpFilterSse2DRowF32 {}
     }
 }
 
-impl<T, const OP_TYPE: u8> MorthOpFilterFlat2DRow<T> for MorphOpFilterSse2DRow<OP_TYPE>
+impl<T, const OP_TYPE: u8> MorthOpFilterFlat2DRow<T> for MorphOpFilterSse2DRowF32<OP_TYPE>
 where
     T: Copy + 'static + MorphNativeOp<T>,
 {
@@ -65,12 +65,12 @@ where
         let stride = width;
 
         let decision = match op_type {
-            MorphOp::Dilate => _mm_max_epu8,
-            MorphOp::Erode => _mm_min_epu8,
+            MorphOp::Dilate => _mm_max_ps,
+            MorphOp::Erode => _mm_min_ps,
         };
 
-        let src: &Vec<u8> = std::mem::transmute(&arena.arena);
-        let dst: &UnsafeSlice<u8> = std::mem::transmute(dst);
+        let src: &Vec<f32> = std::mem::transmute(&arena.arena);
+        let dst: &UnsafeSlice<f32> = std::mem::transmute(dst);
 
         let dx = arena.pad_w as i32;
         let dy = arena.pad_h as i32;
@@ -92,108 +92,87 @@ where
 
         let mut _cx = 0usize;
 
-        while _cx + 64 < width {
+        while _cx + 16 < width {
             let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
-            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
-            let mut row1 = _mm_loadu_si128(ptr0.add(16) as *const __m128i);
-            let mut row2 = _mm_loadu_si128(ptr0.add(32) as *const __m128i);
-            let mut row3 = _mm_loadu_si128(ptr0.add(48) as *const __m128i);
+            let mut row0 = _mm_loadu_ps(ptr0);
+            let mut row1 = _mm_loadu_ps(ptr0.add(4));
+            let mut row2 = _mm_loadu_ps(ptr0.add(8));
+            let mut row3 = _mm_loadu_ps(ptr0.add(12));
 
             for i in 1..length {
                 let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
-                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
-                let new_row1 = _mm_loadu_si128(ptr_d.add(16) as *const __m128i);
-                let new_row2 = _mm_loadu_si128(ptr_d.add(32) as *const __m128i);
-                let new_row3 = _mm_loadu_si128(ptr_d.add(48) as *const __m128i);
+                let new_row0 = _mm_loadu_ps(ptr_d);
+                let new_row1 = _mm_loadu_ps(ptr_d.add(4));
+                let new_row2 = _mm_loadu_ps(ptr_d.add(8));
+                let new_row3 = _mm_loadu_ps(ptr_d.add(12));
                 row0 = decision(row0, new_row0);
                 row1 = decision(row1, new_row1);
                 row2 = decision(row2, new_row2);
                 row3 = decision(row3, new_row3);
             }
 
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut f32;
 
-            _mm_storeu_si128(v_dst as *mut __m128i, row0);
-            _mm_storeu_si128(v_dst.add(16) as *mut __m128i, row1);
-            _mm_storeu_si128(v_dst.add(32) as *mut __m128i, row2);
-            _mm_storeu_si128(v_dst.add(48) as *mut __m128i, row3);
-
-            _cx += 64;
-        }
-
-        while _cx + 32 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
-            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
-            let mut row1 = _mm_loadu_si128(ptr0.add(16) as *const __m128i);
-
-            for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
-                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
-                let new_row1 = _mm_loadu_si128(ptr_d.add(16) as *const __m128i);
-                row0 = decision(row0, new_row0);
-                row1 = decision(row1, new_row1);
-            }
-
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
-
-            _mm_storeu_si128(v_dst as *mut __m128i, row0);
-            _mm_storeu_si128(v_dst.add(16) as *mut __m128i, row1);
-
-            _cx += 32;
-        }
-
-        while _cx + 16 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
-            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
-
-            for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
-                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
-                row0 = decision(row0, new_row0);
-            }
-
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
-            _mm_storeu_si128(v_dst as *mut __m128i, row0);
+            _mm_storeu_ps(v_dst, row0);
+            _mm_storeu_ps(v_dst.add(4), row1);
+            _mm_storeu_ps(v_dst.add(8), row2);
+            _mm_storeu_ps(v_dst.add(12), row3);
 
             _cx += 16;
         }
 
         while _cx + 8 < width {
             let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
-            let mut row0 = _mm_loadu_si64(ptr0);
+            let mut row0 = _mm_loadu_ps(ptr0);
+            let mut row1 = _mm_loadu_ps(ptr0.add(4));
 
             for i in 1..length {
                 let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
-                let new_row0 = _mm_loadu_si64(ptr_d);
+                let new_row0 = _mm_loadu_ps(ptr_d);
+                let new_row1 = _mm_loadu_ps(ptr_d.add(4));
                 row0 = decision(row0, new_row0);
+                row1 = decision(row1, new_row1);
             }
 
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
-            std::ptr::copy_nonoverlapping(&row0 as *const _ as *const u8, v_dst, 8);
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut f32;
+
+            _mm_storeu_ps(v_dst, row0);
+            _mm_storeu_ps(v_dst.add(8), row1);
 
             _cx += 8;
         }
 
-        for x in (_cx..width.saturating_sub(4)).step_by(4) {
-            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
-            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(x + 1);
-            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(x + 2);
-            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(x + 3);
+        while _cx + 4 < width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+            let mut row0 = _mm_loadu_ps(ptr0);
 
             for i in 1..length {
-                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
-                k1 = k1.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 1));
-                k2 = k2.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 2));
-                k3 = k3.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 3));
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let new_row0 = _mm_loadu_ps(ptr_d);
+                row0 = decision(row0, new_row0);
             }
 
-            let dst_offset = y * stride + x;
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut f32;
+            _mm_storeu_ps(v_dst, row0);
 
-            dst.write(dst_offset, k0);
-            dst.write(dst_offset + 1, k1);
-            dst.write(dst_offset + 2, k2);
-            dst.write(dst_offset + 3, k3);
-            _cx = x;
+            _cx += 4;
+        }
+
+        while _cx + 2 < width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+            let mut row0 = _mm_castsi128_ps(_mm_loadu_si64(ptr0 as *const u8));
+
+            for i in 1..length {
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let new_row0 = _mm_castsi128_ps(_mm_loadu_si64(ptr_d as *const u8));
+                row0 = decision(row0, new_row0);
+            }
+
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            let v0 = _mm_castps_si128(row0);
+            std::ptr::copy_nonoverlapping(&v0 as *const _ as *const u8, v_dst, 8);
+
+            _cx += 2;
         }
 
         for x in _cx..width {

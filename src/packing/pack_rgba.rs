@@ -26,9 +26,12 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+use crate::packing::neon::pack_rgba_neon;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::packing::sse::pack_rgba_sse;
 use crate::packing::UnpackedRgbaImage;
 use crate::ImageSize;
-use crate::packing::neon::pack_rgba_neon;
 
 pub fn interleave_rgba_naive<T>(
     unpacked_rgba_image: &UnpackedRgbaImage<T>,
@@ -62,6 +65,12 @@ pub fn pack_rgba(
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     {
         _dispatcher = pack_rgba_neon;
+    }
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if std::arch::is_x86_feature_detected!("sse4.1") {
+            _dispatcher = pack_rgba_sse;
+        }
     }
     _dispatcher(
         unpacked_rgb_image,

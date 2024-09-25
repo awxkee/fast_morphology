@@ -145,3 +145,24 @@ pub unsafe fn _mm256_deinterleave_rgb(
     let r0 = _mm256_shuffle_epi8(r0, sh_r);
     (b0, g0, r0)
 }
+
+#[inline]
+#[target_feature(enable = "avx2")]
+pub unsafe fn _mm256_load_deinterleave_rgb(ptr: *const u8) -> (__m256i, __m256i, __m256i) {
+    let row0 = _mm256_loadu_si256(ptr as *const __m256i);
+    let row1 = _mm256_loadu_si256(ptr.add(32) as *const __m256i);
+    let row2 = _mm256_loadu_si256(ptr.add(64) as *const __m256i);
+    _mm256_deinterleave_rgb(row0, row1, row2)
+}
+
+#[inline]
+#[target_feature(enable = "avx2")]
+pub unsafe fn _mm256_load_deinterleave_rgba(
+    ptr: *const u8,
+) -> (__m256i, __m256i, __m256i, __m256i) {
+    let row0 = _mm256_loadu_si256(ptr as *const __m256i);
+    let row1 = _mm256_loadu_si256(ptr.add(32) as *const __m256i);
+    let row2 = _mm256_loadu_si256(ptr.add(64) as *const __m256i);
+    let row3 = _mm256_loadu_si256(ptr.add(96) as *const __m256i);
+    _mm256_deinterleave_rgba_epi8(row0, row1, row2, row3)
+}

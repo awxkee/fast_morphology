@@ -26,10 +26,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod hminmax;
 mod morph_op;
-mod op;
+mod morph_op_f32;
+mod morph_op_u16;
 
-pub use hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
 pub use morph_op::MorphOpFilterSse2DRow;
-pub use op::{fast_morph_op_1d_sse, fast_morph_op_3d_sse, fast_morph_op_4d_sse};
+pub use morph_op_f32::MorphOpFilterSse2DRowF32;
+pub use morph_op_u16::MorphOpFilterSse2DRowU16;

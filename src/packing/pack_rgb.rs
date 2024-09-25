@@ -28,6 +28,8 @@
  */
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::packing::neon::pack_rgb_neon;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::packing::sse::pack_rgb_sse;
 use crate::packing::UnpackedRgbImage;
 use crate::ImageSize;
 
@@ -60,6 +62,12 @@ pub fn pack_rgb(
     #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
     {
         _dispatcher = pack_rgb_neon;
+    }
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if std::arch::is_x86_feature_detected!("sse4.1") {
+            _dispatcher = pack_rgb_sse;
+        }
     }
     _dispatcher(
         unpacked_rgb_image,

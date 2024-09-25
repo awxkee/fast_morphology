@@ -28,8 +28,13 @@
  */
 mod deinterleave_rgb;
 mod deinterleave_rgba;
+mod pack_rgb;
+mod pack_rgba;
 pub mod v_load;
+mod v_store;
 
 pub use deinterleave_rgb::deinterleave_rgb_sse;
 pub use deinterleave_rgba::deinterleave_rgba_sse;
+pub use pack_rgb::pack_rgb_sse;
+pub use pack_rgba::pack_rgba_sse;
 pub use v_load::*;

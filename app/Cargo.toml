@@ -7,7 +7,7 @@ edition = "2021"
 image = "0.25.2"
 fast_morphology = {path = "../"}
 imageproc = "0.25.0"
-opencv = {version = "0.93.0", features = ["imgproc", "clang-runtime"]}
+opencv = {version = "0.93.0", features = ["imgproc"]}
 
 [dev-dependencies]
 criterion = {version = "0.5.1", features = ["html_reports"]}

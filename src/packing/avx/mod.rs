@@ -26,4 +26,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+mod deinterleave_rgb;
+mod deinterleave_rgba;
 mod v_load;
+
+pub use deinterleave_rgb::deinterleave_rgb_avx;
+pub use deinterleave_rgba::deinterleave_rgba_avx;

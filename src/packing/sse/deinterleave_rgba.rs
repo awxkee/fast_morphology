@@ -26,9 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::packing::sse::{
-    _mm_load_deinterleave_half_rgb, _mm_load_deinterleave_half_rgba, _mm_load_deinterleave_rgba,
-};
+use crate::packing::sse::{_mm_load_deinterleave_half_rgba, _mm_load_deinterleave_rgba};
 use crate::packing::UnpackedRgbaImage;
 use crate::ImageSize;
 #[cfg(target_arch = "x86")]
@@ -37,6 +35,16 @@ use std::arch::x86::*;
 use std::arch::x86_64::*;
 
 pub fn deinterleave_rgba_sse(
+    rgb_image: &[u8],
+    width: usize,
+    height: usize,
+) -> UnpackedRgbaImage<u8> {
+    unsafe { deinterleave_rgba_sse_impl(rgb_image, width, height) }
+}
+
+#[inline]
+#[target_feature(enable = "sse4.1")]
+unsafe fn deinterleave_rgba_sse_impl(
     rgb_image: &[u8],
     width: usize,
     height: usize,
@@ -55,7 +63,7 @@ pub fn deinterleave_rgba_sse(
     let mut b_dst: &mut [u8] = unpacked_image.b_channel.as_mut_slice();
     let mut a_dst: &mut [u8] = unpacked_image.a_channel.as_mut_slice();
 
-    let src_stride = width * 3;
+    let src_stride = width * 4;
 
     let mut src = rgb_image;
     unsafe {

@@ -26,6 +26,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+pub mod avx;
 mod morph_row_op;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 pub mod neon;

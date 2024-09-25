@@ -30,13 +30,13 @@ use crate::arena::make_arena;
 use crate::border_mode::BorderMode;
 use crate::filter::MorthFilterFlat2DRow;
 use crate::filter_op_declare::MorthOpFilterFlat2DRow;
+use crate::morph_base::MorphNativeOp;
 use crate::op_type::MorphOp;
 use crate::se_scan::scan_se;
 use crate::structuring_element::KernelShape;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::{ImageSize, MorphologyThreadingPolicy};
 use std::sync::Arc;
-use crate::morph_base::MorphNativeOp;
 
 pub(crate) unsafe fn make_morphology<T, const OP_TYPE: u8>(
     src: &[T],

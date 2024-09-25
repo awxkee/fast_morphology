@@ -1,10 +1,9 @@
 use fast_morphology::{
-    dilate, dilate_rgb, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
+    dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
 };
 use image::{EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
-    Mat, MatTrait, MatTraitConstManual, Point, Scalar,
-    BORDER_REPLICATE, CV_8U, CV_8UC3,
+    Mat, MatTrait, MatTraitConstManual, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC3,
 };
 use opencv::imgproc;
 use std::time::Instant;
@@ -164,11 +163,11 @@ fn main() {
     }
 
     let rgba_image = transient_rgba.as_bytes();
-    let mut dst = vec![0u8; saved_origin.len()];
+    let mut dst = vec![0u8; rgba_image.len()];
 
     let exec_time = Instant::now();
-    dilate_rgb(
-        &saved_origin,
+    dilate_rgba(
+        &rgba_image,
         &mut dst,
         image_size,
         &structuring_element,
@@ -237,7 +236,7 @@ fn main() {
         &dst,
         dimensions.0,
         dimensions.1,
-        image::ColorType::Rgb8,
+        image::ColorType::Rgba8,
     )
     .unwrap();
 

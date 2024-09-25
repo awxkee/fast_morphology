@@ -30,23 +30,23 @@
 pub mod avx;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 mod neon;
+mod pack_gray_alpha;
 mod pack_rgb;
 mod pack_rgba;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod sse;
 mod traits;
+mod unpack_gray_alpha;
 mod unpack_rgb;
 mod unpack_rgba;
+mod unpacked_gray_alpha;
 mod unpacked_rgb_image;
 mod unpacked_rgba_image;
-mod unpack_gray_alpha;
-mod unpacked_gray_alpha;
-mod pack_gray_alpha;
 
 pub use pack_rgb::pack_rgb;
-pub use traits::{RgbPackable, RgbaPackable, GrayAlphaPackable};
+pub use traits::{GrayAlphaPackable, RgbPackable, RgbaPackable};
 pub use unpack_rgb::unpack_rgb;
 pub use unpack_rgba::unpack_rgba;
+pub use unpacked_gray_alpha::UnpackedGrayAlpha;
 pub use unpacked_rgb_image::UnpackedRgbImage;
 pub use unpacked_rgba_image::UnpackedRgbaImage;
-pub use unpacked_gray_alpha::UnpackedGrayAlpha;

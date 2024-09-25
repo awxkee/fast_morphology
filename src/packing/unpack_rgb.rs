@@ -26,6 +26,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::packing::avx::deinterleave_rgb_avx;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::packing::neon::deinterleave_rgb_neon;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -76,6 +78,9 @@ pub fn unpack_rgb(rgb_image: &[u8], image_size: ImageSize) -> UnpackedRgbImage<u
     {
         if std::arch::is_x86_feature_detected!("sse4.1") {
             _dispatcher = deinterleave_rgb_sse;
+        }
+        if std::arch::is_x86_feature_detected!("avx2") {
+            _dispatcher = deinterleave_rgb_avx;
         }
     }
     _dispatcher(rgb_image, image_size.width, image_size.height)

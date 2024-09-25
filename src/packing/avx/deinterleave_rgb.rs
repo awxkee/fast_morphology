@@ -26,6 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::packing::avx::v_load::_mm256_load_deinterleave_rgb;
 use crate::packing::sse::{_mm_load_deinterleave_half_rgb, _mm_load_deinterleave_rgb};
 use crate::packing::UnpackedRgbImage;
 #[cfg(target_arch = "x86")]
@@ -33,13 +34,13 @@ use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
-pub fn deinterleave_rgb_sse(rgb_image: &[u8], width: usize, height: usize) -> UnpackedRgbImage<u8> {
-    unsafe { deinterleave_rgb_sse_impl(rgb_image, width, height) }
+pub fn deinterleave_rgb_avx(rgb_image: &[u8], width: usize, height: usize) -> UnpackedRgbImage<u8> {
+    unsafe { deinterleave_rgb_impl(rgb_image, width, height) }
 }
 
 #[inline]
-#[target_feature(enable = "sse4.1")]
-unsafe fn deinterleave_rgb_sse_impl(
+#[target_feature(enable = "avx2")]
+unsafe fn deinterleave_rgb_impl(
     rgb_image: &[u8],
     width: usize,
     height: usize,
@@ -65,6 +66,15 @@ unsafe fn deinterleave_rgb_sse_impl(
     unsafe {
         for _ in 0..height {
             let mut _cx = 0usize;
+
+            while _cx + 32 < width {
+                let px = _cx * 3;
+                let pixels = _mm256_load_deinterleave_rgb(src.as_ptr().add(px));
+                _mm256_storeu_si256(r_dst.as_mut_ptr().add(_cx) as *mut __m256i, pixels.0);
+                _mm256_storeu_si256(g_dst.as_mut_ptr().add(_cx) as *mut __m256i, pixels.1);
+                _mm256_storeu_si256(b_dst.as_mut_ptr().add(_cx) as *mut __m256i, pixels.2);
+                _cx += 32;
+            }
 
             while _cx + 16 < width {
                 let px = _cx * 3;

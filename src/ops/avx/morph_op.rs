@@ -38,19 +38,19 @@ use std::arch::x86::*;
 use std::arch::x86_64::*;
 
 #[derive(Clone)]
-pub struct MorphOpFilterSse2DRow<const OP_TYPE: u8> {}
+pub struct MorphOpFilterAvx2DRow<const OP_TYPE: u8> {}
 
-impl<const OP_TYPE: u8> Default for MorphOpFilterSse2DRow<OP_TYPE> {
+impl<const OP_TYPE: u8> Default for MorphOpFilterAvx2DRow<OP_TYPE> {
     fn default() -> Self {
-        MorphOpFilterSse2DRow {}
+        MorphOpFilterAvx2DRow {}
     }
 }
 
-impl<T, const OP_TYPE: u8> MorthOpFilterFlat2DRow<T> for MorphOpFilterSse2DRow<OP_TYPE>
+impl<T, const OP_TYPE: u8> MorthOpFilterFlat2DRow<T> for MorphOpFilterAvx2DRow<OP_TYPE>
 where
     T: Copy + 'static + MorphNativeOp<T>,
 {
-    #[target_feature(enable = "sse4.1")]
+    #[target_feature(enable = "avx2")]
     unsafe fn dispatch_row(
         &self,
         arena: &Arena<T>,
@@ -67,6 +67,11 @@ where
         let decision = match op_type {
             MorphOp::Dilate => _mm_max_epu8,
             MorphOp::Erode => _mm_min_epu8,
+        };
+
+        let decision_avx = match op_type {
+            MorphOp::Dilate => _mm256_max_epu8,
+            MorphOp::Erode => _mm256_min_epu8,
         };
 
         let src: &Vec<u8> = std::mem::transmute(&arena.arena);
@@ -92,52 +97,69 @@ where
 
         let mut _cx = 0usize;
 
-        while _cx + 64 < width {
+        while _cx + 128 < width {
             let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
-            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
-            let mut row1 = _mm_loadu_si128(ptr0.add(16) as *const __m128i);
-            let mut row2 = _mm_loadu_si128(ptr0.add(32) as *const __m128i);
-            let mut row3 = _mm_loadu_si128(ptr0.add(48) as *const __m128i);
+            let mut row0 = _mm256_loadu_si256(ptr0 as *const __m256i);
+            let mut row1 = _mm256_loadu_si256(ptr0.add(32) as *const __m256i);
+            let mut row2 = _mm256_loadu_si256(ptr0.add(64) as *const __m256i);
+            let mut row3 = _mm256_loadu_si256(ptr0.add(96) as *const __m256i);
 
             for i in 1..length {
                 let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
-                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
-                let new_row1 = _mm_loadu_si128(ptr_d.add(16) as *const __m128i);
-                let new_row2 = _mm_loadu_si128(ptr_d.add(32) as *const __m128i);
-                let new_row3 = _mm_loadu_si128(ptr_d.add(48) as *const __m128i);
-                row0 = decision(row0, new_row0);
-                row1 = decision(row1, new_row1);
-                row2 = decision(row2, new_row2);
-                row3 = decision(row3, new_row3);
+                let new_row0 = _mm256_loadu_si256(ptr_d as *const __m256i);
+                let new_row1 = _mm256_loadu_si256(ptr_d.add(32) as *const __m256i);
+                let new_row2 = _mm256_loadu_si256(ptr_d.add(64) as *const __m256i);
+                let new_row3 = _mm256_loadu_si256(ptr_d.add(96) as *const __m256i);
+                row0 = decision_avx(row0, new_row0);
+                row1 = decision_avx(row1, new_row1);
+                row2 = decision_avx(row2, new_row2);
+                row3 = decision_avx(row3, new_row3);
             }
 
             let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
 
-            _mm_storeu_si128(v_dst as *mut __m128i, row0);
-            _mm_storeu_si128(v_dst.add(16) as *mut __m128i, row1);
-            _mm_storeu_si128(v_dst.add(32) as *mut __m128i, row2);
-            _mm_storeu_si128(v_dst.add(48) as *mut __m128i, row3);
+            _mm256_storeu_si256(v_dst as *mut __m256i, row0);
+            _mm256_storeu_si256(v_dst.add(32) as *mut __m256i, row1);
+            _mm256_storeu_si256(v_dst.add(64) as *mut __m256i, row2);
+            _mm256_storeu_si256(v_dst.add(96) as *mut __m256i, row3);
+
+            _cx += 128;
+        }
+
+        while _cx + 64 < width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+            let mut row0 = _mm256_loadu_si256(ptr0 as *const __m256i);
+            let mut row1 = _mm256_loadu_si256(ptr0.add(32) as *const __m256i);
+
+            for i in 1..length {
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let new_row0 = _mm256_loadu_si256(ptr_d as *const __m256i);
+                let new_row1 = _mm256_loadu_si256(ptr_d.add(32) as *const __m256i);
+                row0 = decision_avx(row0, new_row0);
+                row1 = decision_avx(row1, new_row1);
+            }
+
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+
+            _mm256_storeu_si256(v_dst as *mut __m256i, row0);
+            _mm256_storeu_si256(v_dst.add(32) as *mut __m256i, row1);
 
             _cx += 64;
         }
 
         while _cx + 32 < width {
             let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
-            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
-            let mut row1 = _mm_loadu_si128(ptr0.add(16) as *const __m128i);
+            let mut row0 = _mm256_loadu_si256(ptr0 as *const __m256i);
 
             for i in 1..length {
                 let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
-                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
-                let new_row1 = _mm_loadu_si128(ptr_d.add(16) as *const __m128i);
-                row0 = decision(row0, new_row0);
-                row1 = decision(row1, new_row1);
+                let new_row0 = _mm256_loadu_si256(ptr_d as *const __m256i);
+                row0 = decision_avx(row0, new_row0);
             }
 
             let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
 
-            _mm_storeu_si128(v_dst as *mut __m128i, row0);
-            _mm_storeu_si128(v_dst.add(16) as *mut __m128i, row1);
+            _mm256_storeu_si256(v_dst as *mut __m256i, row0);
 
             _cx += 32;
         }

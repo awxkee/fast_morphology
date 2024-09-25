@@ -41,14 +41,7 @@ pub(crate) unsafe fn make_morphology_rgba<T, const OP_TYPE: u8>(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String>
 where
-    T: RgbaPackable<T>
-        + Default
-        + Copy
-        + Clone
-        + Send
-        + Sync
-        + 'static
-        + MorphNativeOp<T>,
+    T: RgbaPackable<T> + Default + Copy + Clone + Send + Sync + 'static + MorphNativeOp<T>,
 {
     let unpacked = T::unpack(src, image_size);
     let mut dst_unpacked = UnpackedRgbaImage::alloc(image_size);
