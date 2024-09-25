@@ -112,35 +112,56 @@ unsafe fn copy_row_sse(dst: &mut [u8], src: &[u8], start: usize, stride: usize) 
 
 /// Copies ROI from one image to another
 #[allow(clippy::type_complexity)]
-pub fn copy_roi(arena: &mut [u8], roi: &[u8], arena_stride: usize, stride: usize, height: usize) {
-    let mut dst = arena;
-    let mut src = roi;
-    let mut _row_handle: Option<unsafe fn(&mut [u8], &[u8], usize, usize) -> usize> = None;
-    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-    {
-        _row_handle = Some(copy_row_neon);
-    }
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    {
-        if std::arch::is_x86_feature_detected!("sse4.1") {
-            _row_handle = Some(copy_row_sse);
+pub fn copy_roi<T>(arena: &mut [T], roi: &[T], arena_stride: usize, stride: usize, height: usize)
+where
+    T: Copy,
+{
+    if std::any::type_name::<T>() == "u8" {
+        let mut dst: &mut [u8] = unsafe { std::mem::transmute(arena) };
+        let mut src = unsafe { std::mem::transmute(roi) };
+        let mut _row_handle: Option<unsafe fn(&mut [u8], &[u8], usize, usize) -> usize> = None;
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        {
+            _row_handle = Some(copy_row_neon);
         }
-    }
-    unsafe {
-        for _ in 0..height {
-            let mut _cx = 0usize;
-
-            if let Some(row_handle) = _row_handle {
-                _cx = row_handle(dst, src, _cx, stride);
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if std::arch::is_x86_feature_detected!("sse4.1") {
+                _row_handle = Some(copy_row_sse);
             }
+        }
+        unsafe {
+            for _ in 0..height {
+                let mut _cx = 0usize;
 
-            while _cx < stride {
-                *dst.get_unchecked_mut(_cx) = *src.get_unchecked(_cx);
-                _cx += 1;
+                if let Some(row_handle) = _row_handle {
+                    _cx = row_handle(dst, src, _cx, stride);
+                }
+
+                while _cx < stride {
+                    *dst.get_unchecked_mut(_cx) = *src.get_unchecked(_cx);
+                    _cx += 1;
+                }
+
+                dst = dst.get_unchecked_mut(arena_stride..);
+                src = src.get_unchecked(stride..);
             }
+        }
+    } else {
+        let mut dst = arena;
+        let mut src = roi;
+        unsafe {
+            for _ in 0..height {
+                let mut _cx = 0usize;
 
-            dst = dst.get_unchecked_mut(arena_stride..);
-            src = src.get_unchecked(stride..);
+                while _cx < stride {
+                    *dst.get_unchecked_mut(_cx) = *src.get_unchecked(_cx);
+                    _cx += 1;
+                }
+
+                dst = dst.get_unchecked_mut(arena_stride..);
+                src = src.get_unchecked(stride..);
+            }
         }
     }
 }

@@ -1,10 +1,10 @@
 use fast_morphology::{
-    dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
+    dilate, dilate_rgb, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
 };
 use image::{EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
-    Mat, MatTrait, MatTraitConstManual, Point, Scalar, BORDER_CONSTANT, BORDER_ISOLATED,
-    BORDER_REPLICATE, CV_8U, CV_8UC3, CV_8UC4,
+    Mat, MatTrait, MatTraitConstManual, Point, Scalar,
+    BORDER_REPLICATE, CV_8U, CV_8UC3,
 };
 use opencv::imgproc;
 use std::time::Instant;
@@ -66,7 +66,7 @@ fn gaussian_kernel(size: usize, sigma: f32) -> Vec<Vec<f32>> {
 }
 
 fn main() {
-    let radius_size = 15;
+    let radius_size = 55;
     let mut structuring_element = circle_se(radius_size);
 
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");

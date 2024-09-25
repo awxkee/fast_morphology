@@ -26,47 +26,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::unsafe_slice::UnsafeSlice;
-use colorutils_rs::{Rgb, Rgba};
+use crate::ImageSize;
 
-#[inline]
-pub fn rgba_from_slice(slice: &[u8]) -> Rgba<u8> {
-    unsafe {
-        let bytes = (slice.as_ptr() as *const u32)
-            .read_unaligned()
-            .to_le_bytes();
-        Rgba::new(bytes[0], bytes[1], bytes[2], bytes[3])
+#[derive(Clone, Debug)]
+pub struct UnpackedGrayAlpha<T> {
+    pub gray_channel: Vec<T>,
+    pub alpha_channel: Vec<T>,
+}
+
+impl<T> UnpackedGrayAlpha<T> {
+    pub fn new(g: Vec<T>, a: Vec<T>) -> UnpackedGrayAlpha<T> {
+        UnpackedGrayAlpha {
+            gray_channel: g,
+            alpha_channel: a,
+        }
     }
 }
 
-#[inline]
-pub fn rgb_from_slice(slice: &[u8]) -> Rgb<u8> {
-    unsafe {
-        Rgb::new(
-            *slice.get_unchecked(0),
-            *slice.get_unchecked(1),
-            *slice.get_unchecked(2),
+impl<T> UnpackedGrayAlpha<T>
+where
+    T: Default + Clone,
+{
+    pub fn alloc(image_size: ImageSize) -> UnpackedGrayAlpha<T> {
+        let plane_size = image_size.height * image_size.width;
+        UnpackedGrayAlpha::new(
+            vec![T::default(); plane_size],
+            vec![T::default(); plane_size],
         )
-    }
-}
-
-#[inline]
-pub fn write_rgba_to_slice(cell: &UnsafeSlice<u8>, pos: usize, pixel: Rgba<u8>) {
-    unsafe {
-        let ptr = cell.slice.as_ptr().add(pos) as *mut u32;
-        let px = u32::from_le_bytes([pixel.r, pixel.g, pixel.b, pixel.a]);
-        ptr.write_unaligned(px);
-    }
-}
-
-#[inline]
-pub fn write_rgb_to_slice(cell: &UnsafeSlice<u8>, pos: usize, pixel: Rgb<u8>) {
-    unsafe {
-        let first = u16::from_le_bytes([pixel.r, pixel.g]);
-        let v_ptr = cell.slice.as_ptr().add(pos);
-        let ptr0 = v_ptr as *mut u16;
-        ptr0.write_unaligned(first);
-        let ptr1 = v_ptr.add(2) as *mut u8;
-        ptr1.write_unaligned(pixel.b);
     }
 }

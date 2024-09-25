@@ -26,33 +26,35 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::ImageSize;
 
-pub enum SmartAllocator<T>
-where
-    T: Sized,
-{
-    Small([T; 1000]), // Stack allocation
-    Large(Vec<T>),    // Heap allocation
+#[derive(Clone, Debug)]
+pub struct UnpackedRgbImage<T> {
+    pub r_channel: Vec<T>,
+    pub g_channel: Vec<T>,
+    pub b_channel: Vec<T>,
 }
 
-impl<T> SmartAllocator<T>
-where
-    T: Copy,
-{
-    pub fn new(base_val: T, size: usize) -> Self {
-        if size < 1000 {
-            // Use stack-allocated array for small sizes
-            SmartAllocator::Small([base_val; 1000])
-        } else {
-            // Use heap-allocated Vec for large sizes
-            SmartAllocator::Large(vec![base_val; size])
+impl<T> UnpackedRgbImage<T> {
+    pub fn new(r: Vec<T>, g: Vec<T>, b: Vec<T>) -> UnpackedRgbImage<T> {
+        UnpackedRgbImage {
+            r_channel: r,
+            g_channel: g,
+            b_channel: b,
         }
     }
+}
 
-    pub fn as_mut_slice(&mut self) -> &mut [T] {
-        match self {
-            SmartAllocator::Small(arr) => arr,
-            SmartAllocator::Large(vec) => vec,
-        }
+impl<T> UnpackedRgbImage<T>
+where
+    T: Default + Clone,
+{
+    pub fn alloc(image_size: ImageSize) -> UnpackedRgbImage<T> {
+        let plane_size = image_size.height * image_size.width;
+        UnpackedRgbImage::new(
+            vec![T::default(); plane_size],
+            vec![T::default(); plane_size],
+            vec![T::default(); plane_size],
+        )
     }
 }

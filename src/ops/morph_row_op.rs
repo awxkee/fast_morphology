@@ -28,9 +28,7 @@
  */
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
-use crate::op_type::MorphOp;
-use crate::ops::op::fast_morph_op_1d;
-use crate::ops::smart_allocator::SmartAllocator;
+use crate::morph_base::MorphNativeOp;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 
@@ -43,138 +41,72 @@ impl<const OP_TYPE: u8> Default for MorphFilterFlat2DRow<OP_TYPE> {
     }
 }
 
-impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphFilterFlat2DRow<OP_TYPE> {
+impl<T, const OP_TYPE: u8> MorthOpFilterFlat2DRow<T> for MorphFilterFlat2DRow<OP_TYPE>
+where
+    T: 'static + Copy + MorphNativeOp<T>,
+{
     unsafe fn dispatch_row(
         &self,
-        src: &[u8],
-        dst: &UnsafeSlice<u8>,
+        arena: &Arena<T>,
+        dst: &UnsafeSlice<T>,
         image_size: ImageSize,
         analyzed_se: AnalyzedSe,
         y: usize,
-        arena: &Option<Arena>,
     ) {
         let width = image_size.width;
-        let height = image_size.height;
-        if let Some(arena) = arena {
-            let minmax_resolver = fast_morph_op_1d::<OP_TYPE>();
-            let op_type: MorphOp = OP_TYPE.into();
-            let stride = image_size.width;
+        let stride = image_size.width;
 
-            let base_val = match op_type {
-                MorphOp::Dilate => u8::MIN,
-                MorphOp::Erode => u8::MAX,
-            };
+        let src = &arena.arena;
 
-            let src = &arena.arena;
+        let dx = arena.pad_w as i32;
+        let dy = arena.pad_h as i32;
 
-            let size = analyzed_se.left_front.element_offsets.len();
-            let mut allocated_window_0 = SmartAllocator::new(base_val, size);
-            let items = allocated_window_0.as_mut_slice();
+        let arena_width = arena.width;
 
-            let dx = arena.pad_w as i32;
-            let dy = arena.pad_h as i32;
+        let offsets = analyzed_se
+            .left_front
+            .element_offsets
+            .iter()
+            .map(|&x| {
+                src.get_unchecked(
+                    ((x.y + dy + y as i32) as usize * arena_width + (x.x + dx) as usize)..,
+                )
+            })
+            .collect::<Vec<_>>();
 
-            let arena_width = arena.width;
+        let length = analyzed_se.left_front.element_offsets.iter().len();
 
-            for x in 0..width {
-                let chunk_size = 4;
-                let iterator_4 = analyzed_se
-                    .left_front
-                    .element_offsets
-                    .chunks_exact(chunk_size);
-                let rem = iterator_4.remainder();
-                for (index, filter) in iterator_4.enumerate() {
-                    let filter_start_x0 = filter[0].x + x as i32 + dx;
-                    let filter_start_y0 = filter[0].y + y as i32 + dy;
+        let mut _cx = 0usize;
 
-                    let img_index =
-                        filter_start_x0 as usize + filter_start_y0 as usize * arena_width;
-                    let new_value0 = *src.get_unchecked(img_index);
-                    *items.get_unchecked_mut(index * 4) = new_value0;
+        for x in (_cx..width.saturating_sub(4)).step_by(4) {
+            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
+            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(x + 1);
+            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(x + 2);
+            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(x + 3);
 
-                    let filter_start_x1 = filter[1].x + x as i32 + dx;
-                    let filter_start_y1 = filter[1].y + y as i32 + dy;
-
-                    let img_index =
-                        filter_start_x1 as usize + filter_start_y1 as usize * arena_width;
-                    let new_value1 = *src.get_unchecked(img_index);
-                    *items.get_unchecked_mut(index * 4 + 1) = new_value1;
-
-                    let filter_start_x2 = filter[2].x + x as i32 + dx;
-                    let filter_start_y2 = filter[2].y + y as i32 + dy;
-
-                    let img_index =
-                        filter_start_x2 as usize + filter_start_y2 as usize * arena_width;
-                    let new_value2 = *src.get_unchecked(img_index);
-                    *items.get_unchecked_mut(index * 4 + 2) = new_value2;
-
-                    let filter_start_x3 = filter[3].x + x as i32 + dx;
-                    let filter_start_y3 = filter[3].y + y as i32 + dy;
-
-                    let img_index =
-                        filter_start_x3 as usize + filter_start_y3 as usize * arena_width;
-                    let new_value3 = *src.get_unchecked(img_index);
-                    *items.get_unchecked_mut(index * 4 + 3) = new_value3;
-                }
-
-                for (index, &filter) in rem.iter().enumerate() {
-                    let filter_start_x = filter.x + x as i32 + dx;
-                    let filter_start_y = filter.y + y as i32 + dy;
-
-                    let img_index = filter_start_x as usize + filter_start_y as usize * arena_width;
-                    let new_value0 = *src.get_unchecked(img_index);
-                    *items.get_unchecked_mut(index) = new_value0;
-                }
-
-                dst.write(y * stride + x, minmax_resolver(items));
+            for i in 1..length {
+                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
+                k1 = k1.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 1));
+                k2 = k2.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 2));
+                k3 = k3.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 3));
             }
-        } else {
-            let op_type: MorphOp = OP_TYPE.into();
-            let stride = width;
-            let max_width = width as i32 - 1;
-            let max_height = height as i32 - 1;
 
-            let base_val = match op_type {
-                MorphOp::Dilate => u8::MIN,
-                MorphOp::Erode => u8::MAX,
-            };
+            let dst_offset = y * stride + x;
 
-            for x in 0..width {
-                let mut value0 = base_val;
+            dst.write(dst_offset, k0);
+            dst.write(dst_offset + 1, k1);
+            dst.write(dst_offset + 2, k2);
+            dst.write(dst_offset + 3, k3);
+            _cx = x;
+        }
 
-                for &filter in analyzed_se.left_front.filter_bounds.iter() {
-                    let filter_start_x = filter.x + x as i32;
-                    let filter_start_y = filter.y + y as i32;
-                    if filter_start_y < -1 {
-                        continue;
-                    }
-                    if (filter_start_x + filter.size as i32) < 0 {
-                        continue;
-                    }
-                    let mut filter_size = filter.size as usize;
-                    if filter_size as i32 + filter_start_x >= width as i32 {
-                        filter_size = (width as i32 - filter_start_x) as usize;
-                    }
+        for x in _cx..width {
+            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
 
-                    let mut current_x = 0usize;
-
-                    let py = filter_start_y;
-                    let py0 = py.min(max_height).max(0) as usize * stride;
-
-                    while current_x < filter_size {
-                        let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;
-                        let base_offset0 = py0 + px;
-                        let new_value0 = *src.get_unchecked(base_offset0);
-                        value0 = match op_type {
-                            MorphOp::Dilate => new_value0.max(value0),
-                            MorphOp::Erode => new_value0.min(value0),
-                        };
-                        current_x += 1;
-                    }
-                }
-
-                dst.write(y * stride + x, value0);
+            for i in 1..length {
+                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
             }
+            dst.write(y * stride + x, k0);
         }
     }
 }

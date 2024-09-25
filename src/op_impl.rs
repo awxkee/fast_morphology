@@ -26,9 +26,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::arena::{make_arena, PREFERRED_KERNEL_SIZE_FOR_ARENA};
+use crate::arena::make_arena;
 use crate::border_mode::BorderMode;
-use crate::filter::{MorthFilterFlat2D4Rows, MorthFilterFlat2DRow};
+use crate::filter::MorthFilterFlat2DRow;
 use crate::filter_op_declare::MorthOpFilterFlat2DRow;
 use crate::op_type::MorphOp;
 use crate::se_scan::scan_se;
@@ -36,16 +36,20 @@ use crate::structuring_element::KernelShape;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::{ImageSize, MorphologyThreadingPolicy};
 use std::sync::Arc;
+use crate::morph_base::MorphNativeOp;
 
-pub(crate) unsafe fn make_morphology<const OP_TYPE: u8>(
-    src: &[u8],
-    dst: &mut [u8],
+pub(crate) unsafe fn make_morphology<T, const OP_TYPE: u8>(
+    src: &[T],
+    dst: &mut [T],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
     threading_policy: MorphologyThreadingPolicy,
-) -> Result<(), String> {
+) -> Result<(), String>
+where
+    T: Copy + Default + 'static + Send + Sync + MorphNativeOp<T>,
+{
     if src.len() != dst.len() {
         return Err("Source slice size and destination must match"
             .parse()
@@ -85,88 +89,45 @@ pub(crate) unsafe fn make_morphology<const OP_TYPE: u8>(
     let op_type: MorphOp = OP_TYPE.into();
 
     let filter = Arc::new(MorthFilterFlat2DRow::new(op_type));
-    let filter_4_rows = Arc::new(MorthFilterFlat2D4Rows::new(op_type));
 
-    let arena = if structuring_element_size.width < PREFERRED_KERNEL_SIZE_FOR_ARENA
-        && structuring_element_size.height < PREFERRED_KERNEL_SIZE_FOR_ARENA
-        || border_mode != BorderMode::Clamp
-    {
-        let padded = make_arena::<1>(
-            src,
-            width as u32,
-            height as u32,
-            structuring_element_size,
-            border_mode,
-        );
-        Some(padded)
-    } else {
-        None
-    };
+    let arena = make_arena::<T, 1>(
+        src,
+        width as u32,
+        height as u32,
+        structuring_element_size,
+        border_mode,
+    );
     let arena_arc = Arc::new(arena);
 
     if let Some(pool) = threading_policy.get_pool(image_size) {
         pool.scope(|scope| {
             let unsafe_slice = UnsafeSlice::new(dst);
 
-            let mut yy = 0usize;
-
-            for y in (0..height.saturating_sub(6)).step_by(6) {
-                let cloned_se = analyzed_se.clone();
-                let cloned_filter = filter_4_rows.clone();
-                let arena_clone = arena_arc.clone();
-
-                scope.spawn(move |_| {
-                    cloned_filter.dispatch_row(
-                        src,
-                        &unsafe_slice,
-                        image_size,
-                        cloned_se,
-                        y,
-                        &arena_clone,
-                    );
-                });
-                yy = y;
-            }
-
-            for y in yy..height {
+            for y in 0..height {
                 let cloned_se = analyzed_se.clone();
                 let cloned_filter = filter.clone();
                 let arena_clone = arena_arc.clone();
                 scope.spawn(move |_| {
                     cloned_filter.dispatch_row(
-                        src,
+                        &arena_clone,
                         &unsafe_slice,
                         image_size,
                         cloned_se,
                         y,
-                        &arena_clone,
                     );
                 });
             }
         })
     } else {
-        let mut yy = 0usize;
-
-        for y in (0..height.saturating_sub(6)).step_by(6) {
-            let cloned_se = analyzed_se.clone();
-            let cloned_filter = filter_4_rows.clone();
-            let unsafe_slice = UnsafeSlice::new(dst);
-            let arena_clone = arena_arc.clone();
-
-            cloned_filter.dispatch_row(src, &unsafe_slice, image_size, cloned_se, y, &arena_clone);
-            yy = y;
-        }
-
-        for y in yy..height {
+        for y in 0..height {
             let unsafe_slice = UnsafeSlice::new(dst);
             let arena_clone = arena_arc.clone();
             filter.dispatch_row(
-                src,
+                &arena_clone,
                 &unsafe_slice,
                 image_size,
                 analyzed_se.clone(),
                 y,
-                &arena_clone,
             );
         }
     }

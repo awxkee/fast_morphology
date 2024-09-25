@@ -26,11 +26,45 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod op_1d;
-mod op_3d;
-mod op_4d;
-mod v_load;
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+use crate::packing::neon::pack_rgb_neon;
+use crate::packing::UnpackedRgbImage;
+use crate::ImageSize;
 
-pub use op_1d::fast_morph_op_1d_avx;
-pub use op_3d::fast_morph_op_3d_avx;
-pub use op_4d::fast_morph_op_4d_avx;
+pub fn interleave_rgb_naive<T>(
+    unpacked_rgb_image: &UnpackedRgbImage<T>,
+    dst_image: &mut [T],
+    _: usize,
+    _: usize,
+) where
+    T: Copy,
+{
+    for (((src, r), g), b) in dst_image
+        .chunks_exact_mut(3)
+        .zip(unpacked_rgb_image.r_channel.iter())
+        .zip(unpacked_rgb_image.g_channel.iter())
+        .zip(unpacked_rgb_image.b_channel.iter())
+    {
+        src[0] = *r;
+        src[1] = *g;
+        src[2] = *b;
+    }
+}
+
+pub fn pack_rgb(
+    unpacked_rgb_image: &UnpackedRgbImage<u8>,
+    dst_image: &mut [u8],
+    image_size: ImageSize,
+) {
+    let mut _dispatcher: fn(&UnpackedRgbImage<u8>, &mut [u8], usize, usize) = interleave_rgb_naive;
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        _dispatcher = pack_rgb_neon;
+    }
+    _dispatcher(
+        unpacked_rgb_image,
+        dst_image,
+        image_size.width,
+        image_size.height,
+    );
+}

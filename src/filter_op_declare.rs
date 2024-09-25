@@ -31,8 +31,8 @@ use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 
 #[derive(Clone)]
-pub struct Arena {
-    pub arena: Vec<u8>,
+pub struct Arena<T> {
+    pub arena: Vec<T>,
     pub width: usize,
     #[allow(dead_code)]
     pub height: usize,
@@ -40,14 +40,14 @@ pub struct Arena {
     pub pad_h: usize,
 }
 
-impl Arena {
+impl<T> Arena<T> {
     pub fn new(
-        arena: Vec<u8>,
+        arena: Vec<T>,
         arena_width: usize,
         arena_height: usize,
         arena_pad_w: usize,
         arena_pad_h: usize,
-    ) -> Arena {
+    ) -> Arena<T> {
         Arena {
             arena,
             width: arena_width,
@@ -58,14 +58,13 @@ impl Arena {
     }
 }
 
-pub trait MorthOpFilterFlat2DRow {
+pub trait MorthOpFilterFlat2DRow<T> {
     unsafe fn dispatch_row(
         &self,
-        src: &[u8],
-        dst: &UnsafeSlice<u8>,
+        arena: &Arena<T>,
+        dst: &UnsafeSlice<T>,
         image_size: ImageSize,
         analyzed_se: AnalyzedSe,
         y: usize,
-        arena: &Option<Arena>,
     );
 }

@@ -26,10 +26,57 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod morph_row_op;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-pub mod neon;
+use crate::packing::neon::deinterleave_rgb_neon;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub mod sse;
+use crate::packing::sse::deinterleave_rgb_sse;
+use crate::packing::UnpackedRgbImage;
+use crate::ImageSize;
 
-pub use morph_row_op::MorphFilterFlat2DRow;
+pub fn deinterleave_rgb_naive<T>(
+    rgb_image: &[T],
+    width: usize,
+    height: usize,
+) -> UnpackedRgbImage<T>
+where
+    T: Copy + Default,
+{
+    if rgb_image.len() != width * height * 3 {
+        panic!(
+            "Image bounds in deinterleave_rgba_neon is mismatched! Expected {} but got {}",
+            width * height * 3,
+            rgb_image.len()
+        );
+    }
+    let mut r_chan = vec![T::default(); width * height];
+    let mut g_chan = vec![T::default(); width * height];
+    let mut b_chan = vec![T::default(); width * height];
+
+    for (((src, r), g), b) in rgb_image
+        .chunks_exact(3)
+        .zip(r_chan.iter_mut())
+        .zip(g_chan.iter_mut())
+        .zip(b_chan.iter_mut())
+    {
+        *r = src[0];
+        *g = src[1];
+        *b = src[2];
+    }
+
+    UnpackedRgbImage::new(r_chan, g_chan, b_chan)
+}
+
+pub fn unpack_rgb(rgb_image: &[u8], image_size: ImageSize) -> UnpackedRgbImage<u8> {
+    let mut _dispatcher: fn(&[u8], usize, usize) -> UnpackedRgbImage<u8> = deinterleave_rgb_naive;
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    {
+        _dispatcher = deinterleave_rgb_neon;
+    }
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if std::arch::is_x86_feature_detected!("sse4.1") {
+            _dispatcher = deinterleave_rgb_sse;
+        }
+    }
+    _dispatcher(rgb_image, image_size.width, image_size.height)
+}

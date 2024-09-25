@@ -28,17 +28,14 @@
  */
 use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
+use crate::morph_base::MorphNativeOp;
 use crate::op_type::MorphOp;
-use crate::ops::smart_allocator::SmartAllocator;
-use crate::ops::sse::hminmax::{_mm_hmax_epu8, _mm_hmin_epu8};
-use crate::ops::sse::op::make_morph_op_1d_sse;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
 #[cfg(target_arch = "x86")]
 use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
-use crate::se_scan::ScanPoint;
 
 #[derive(Clone)]
 pub struct MorphOpFilterSse2DRow<const OP_TYPE: u8> {}
@@ -49,19 +46,19 @@ impl<const OP_TYPE: u8> Default for MorphOpFilterSse2DRow<OP_TYPE> {
     }
 }
 
-impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2DRow<OP_TYPE> {
-    #[target_feature(enable = "sse4.1")]
+impl<T, const OP_TYPE: u8> MorthOpFilterFlat2DRow<T> for MorphOpFilterSse2DRow<OP_TYPE>
+where
+    T: Copy + 'static + MorphNativeOp<T>,
+{
     unsafe fn dispatch_row(
         &self,
-        src: &[u8],
-        dst: &UnsafeSlice<u8>,
+        arena: &Arena<T>,
+        dst: &UnsafeSlice<T>,
         image_size: ImageSize,
         analyzed_se: AnalyzedSe,
         y: usize,
-        arena: &Option<Arena>,
     ) {
         let width = image_size.width;
-        let height = image_size.height;
 
         let op_type: MorphOp = OP_TYPE.into();
         let stride = width;
@@ -70,209 +67,141 @@ impl<const OP_TYPE: u8> MorthOpFilterFlat2DRow for MorphOpFilterSse2DRow<OP_TYPE
             MorphOp::Dilate => _mm_max_epu8,
             MorphOp::Erode => _mm_min_epu8,
         };
-        let across_vec_decision = match op_type {
-            MorphOp::Dilate => _mm_hmax_epu8,
-            MorphOp::Erode => _mm_hmin_epu8,
-        };
 
-        let base_val = match op_type {
-            MorphOp::Dilate => u8::MIN,
-            MorphOp::Erode => u8::MAX,
-        };
+        let src: &Vec<u8> = std::mem::transmute(&arena.arena);
+        let dst: &UnsafeSlice<u8> = std::mem::transmute(dst);
 
-        let upper_fix = _mm_set_epi8(
-            base_val as i8,
-            base_val as i8,
-            base_val as i8,
-            base_val as i8,
-            base_val as i8,
-            base_val as i8,
-            base_val as i8,
-            base_val as i8,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        );
+        let dx = arena.pad_w as i32;
+        let dy = arena.pad_h as i32;
 
-        if let Some(arena) = arena {
-            let src = &arena.arena;
+        let arena_stride = arena.width;
 
-            let dx = arena.pad_w as i32;
-            let dy = arena.pad_h as i32;
+        let offsets = analyzed_se
+            .left_front
+            .element_offsets
+            .iter()
+            .map(|&x| {
+                src.get_unchecked(
+                    ((x.y + dy + y as i32) as usize * arena_stride + (x.x + dx) as usize)..,
+                )
+            })
+            .collect::<Vec<_>>();
 
-            let fast_morph_op = make_morph_op_1d_sse::<OP_TYPE>();
+        let length = analyzed_se.left_front.element_offsets.iter().len();
 
-            let size = analyzed_se.left_front.element_offsets.len();
-            let mut allocated_window_0 = SmartAllocator::new(base_val, size);
-            let items0 = allocated_window_0.as_mut_slice();
+        let mut _cx = 0usize;
 
-            let d_size = ScanPoint::new(dx, dy);
-            let prepared_kernel = analyzed_se
-                .left_front
-                .filter_bounds
-                .iter()
-                .map(|&x| x + d_size)
-                .collect::<Vec<_>>();
+        while _cx + 64 < width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
+            let mut row1 = _mm_loadu_si128(ptr0.add(16) as *const __m128i);
+            let mut row2 = _mm_loadu_si128(ptr0.add(32) as *const __m128i);
+            let mut row3 = _mm_loadu_si128(ptr0.add(48) as *const __m128i);
 
-            for x in 0..width {
-
-                let mut index_iter = 0usize;
-
-                for &filter in prepared_kernel.iter() {
-                    let filter_start_x = (filter.x + x as i32) as usize;
-                    let filter_start_y = (filter.y + y as i32) as usize;
-
-                    let filter_size = filter.size as usize;
-
-                    let py0 = filter_start_y * arena.width;
-
-                    let mut current_x = 0usize;
-
-                    while current_x + 16 < filter_size {
-                        let px = filter_start_x + current_x;
-                        let base_offset_0 = py0 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = _mm_loadu_si128(current0.as_ptr() as *const __m128i);
-
-                        *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
-                        index_iter += 1;
-
-                        current_x += 16;
-                    }
-
-                    while current_x + 8 < filter_size {
-                        let px = filter_start_x + current_x;
-                        let base_offset_0 = py0 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = _mm_or_si128(_mm_loadu_si64(current0.as_ptr()), upper_fix);
-
-                        *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
-                        index_iter += 1;
-
-                        current_x += 8;
-                    }
-
-                    while current_x + 4 < filter_size {
-                        let px = filter_start_x + current_x;
-                        let base_offset_0 = py0 + px;
-
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current0.as_ptr() as *const i32).read_unaligned(),
-                        );
-
-                        *items0.get_unchecked_mut(index_iter) = across_vec_decision(new_value0);
-                        index_iter += 1;
-
-                        current_x += 4;
-                    }
-
-                    while current_x < filter_size {
-                        let px = filter_start_x + current_x;
-                        let base_offset_0 = py0 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-
-                        *items0.get_unchecked_mut(index_iter) = *current0.get_unchecked(0);
-                        index_iter += 1;
-
-                        current_x += 1;
-                    }
-                }
-
-                let ptr0 = (dst.slice.as_ptr() as *mut u8).add(y * stride + x);
-                ptr0.write_unaligned(fast_morph_op(items0.get_unchecked(..index_iter)));
+            for i in 1..length {
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
+                let new_row1 = _mm_loadu_si128(ptr_d.add(16) as *const __m128i);
+                let new_row2 = _mm_loadu_si128(ptr_d.add(32) as *const __m128i);
+                let new_row3 = _mm_loadu_si128(ptr_d.add(48) as *const __m128i);
+                row0 = decision(row0, new_row0);
+                row1 = decision(row1, new_row1);
+                row2 = decision(row2, new_row2);
+                row3 = decision(row3, new_row3);
             }
-        } else {
-            let max_width = width as i32 - 1;
-            let max_height = height as i32 - 1;
 
-            for x in 0..width {
-                let filter_bounds = &analyzed_se.left_front.filter_bounds;
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
 
-                let mut value0 = base_val;
+            _mm_storeu_si128(v_dst as *mut __m128i, row0);
+            _mm_storeu_si128(v_dst.add(16) as *mut __m128i, row1);
+            _mm_storeu_si128(v_dst.add(32) as *mut __m128i, row2);
+            _mm_storeu_si128(v_dst.add(48) as *mut __m128i, row3);
 
-                for &filter in filter_bounds.iter() {
-                    let filter_start_x = filter.x + x as i32;
-                    let filter_start_y = filter.y + y as i32;
-                    if (filter_start_y + 1) < 0 {
-                        continue;
-                    }
-                    if (filter_start_x + filter.size as i32) < 0 {
-                        continue;
-                    }
-                    let mut filter_size = filter.size as usize;
-                    if filter_size as i32 + filter_start_x >= width as i32 {
-                        filter_size = (width as i32 - filter_start_x) as usize;
-                    }
+            _cx += 64;
+        }
 
-                    let py = filter_start_y;
-                    let py0 = py.min(max_height).max(0) as usize * stride;
+        while _cx + 32 < width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
+            let mut row1 = _mm_loadu_si128(ptr0.add(16) as *const __m128i);
 
-                    let mut current_x = 0usize;
-
-                    let mut values_v = _mm_set1_epi8(value0 as i8);
-
-                    while current_x + 16 < filter_size && filter_start_x + current_x as i32 > 0 {
-                        let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;
-                        let base_offset_0 = py0 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = _mm_loadu_si128(current0.as_ptr() as *const __m128i);
-
-                        values_v = decision(new_value0, values_v);
-
-                        current_x += 16;
-                    }
-
-                    while current_x + 8 < filter_size && filter_start_x + current_x as i32 > 0 {
-                        let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;
-                        let base_offset_0 = py0 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = _mm_or_si128(_mm_loadu_si64(current0.as_ptr()), upper_fix);
-
-                        values_v = decision(new_value0, values_v);
-
-                        current_x += 8;
-                    }
-
-                    while current_x + 4 < filter_size && filter_start_x + current_x as i32 > 0 {
-                        let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;
-                        let base_offset_0 = py0 + px;
-
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        let new_value0 = _mm_insert_epi32::<0>(
-                            _mm_set1_epi8(base_val as i8),
-                            (current0.as_ptr() as *const i32).read_unaligned(),
-                        );
-
-                        values_v = decision(new_value0, values_v);
-
-                        current_x += 4;
-                    }
-
-                    value0 = across_vec_decision(values_v);
-
-                    while current_x < filter_size {
-                        let px = (filter_start_x + current_x as i32).min(max_width).max(0) as usize;
-                        let base_offset_0 = py0 + px;
-                        let current0 = src.get_unchecked(base_offset_0..);
-                        value0 = match op_type {
-                            MorphOp::Dilate => value0.max(*current0.get_unchecked(0)),
-                            MorphOp::Erode => value0.min(*current0.get_unchecked(0)),
-                        };
-
-                        current_x += 1;
-                    }
-                }
-
-                let ptr0 = (dst.slice.as_ptr() as *mut u8).add(y * stride + x);
-                ptr0.write_unaligned(value0);
+            for i in 1..length {
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
+                let new_row1 = _mm_loadu_si128(ptr_d.add(16) as *const __m128i);
+                row0 = decision(row0, new_row0);
+                row1 = decision(row1, new_row1);
             }
+
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+
+            _mm_storeu_si128(v_dst as *mut __m128i, row0);
+            _mm_storeu_si128(v_dst.add(16) as *mut __m128i, row1);
+
+            _cx += 32;
+        }
+
+        while _cx + 16 < width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+            let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
+
+            for i in 1..length {
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
+                row0 = decision(row0, new_row0);
+            }
+
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            _mm_storeu_si128(v_dst as *mut __m128i, row0);
+
+            _cx += 16;
+        }
+
+        while _cx + 8 < width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+            let mut row0 = _mm_loadu_si64(ptr0);
+
+            for i in 1..length {
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let new_row0 = _mm_loadu_si64(ptr_d);
+                row0 = decision(row0, new_row0);
+            }
+
+            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            std::ptr::copy_nonoverlapping(&row0 as *const _ as *const u8, v_dst, 8);
+
+            _cx += 8;
+        }
+
+        for x in (_cx..width.saturating_sub(4)).step_by(4) {
+            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
+            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(x + 1);
+            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(x + 2);
+            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(x + 3);
+
+            for i in 1..length {
+                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
+                k1 = k1.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 1));
+                k2 = k2.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 2));
+                k3 = k3.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 3));
+            }
+
+            let dst_offset = y * stride + x;
+
+            dst.write(dst_offset, k0);
+            dst.write(dst_offset + 1, k1);
+            dst.write(dst_offset + 2, k2);
+            dst.write(dst_offset + 3, k3);
+            _cx = x;
+        }
+
+        for x in _cx..width {
+            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
+
+            for i in 1..length {
+                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
+            }
+            dst.write(y * stride + x, k0);
         }
     }
 }

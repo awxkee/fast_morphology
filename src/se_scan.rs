@@ -30,52 +30,6 @@ use crate::flat_se::{AnalyzedSe, FlatSe};
 use crate::structuring_element::KernelShape;
 use std::ops::Add;
 
-// Function to group scan points into FilterBounds
-pub fn group_scan_points(scan_points: &[ScanPoint]) -> Vec<FilterBounds> {
-    let mut filter_bounds: Vec<FilterBounds> = Vec::new();
-
-    if scan_points.is_empty() {
-        return filter_bounds;
-    }
-
-    let mut sorted_points = scan_points.to_vec();
-    sorted_points.sort_unstable_by_key(|p| (p.y, p.x));
-
-    let mut current_x = sorted_points[0].x;
-    let mut current_y = sorted_points[0].y;
-    let mut start_x = sorted_points[0].x;
-
-    let mut point_pushed = false;
-
-    for point in sorted_points.iter().skip(1) {
-        // If points are consecutive based on x, blend them together
-        if point.x != current_x + 1 || current_y != point.y {
-            filter_bounds.push(FilterBounds {
-                x: start_x,
-                y: current_y,
-                size: (current_x - start_x + 1) as u16,
-            });
-            point_pushed = true;
-            start_x = point.x;
-        } else {
-            point_pushed = false;
-        }
-
-        current_x = point.x;
-        current_y = point.y;
-    }
-
-    if !point_pushed {
-        filter_bounds.push(FilterBounds {
-            x: start_x,
-            y: current_y,
-            size: (current_x - start_x + 1) as u16,
-        });
-    }
-
-    filter_bounds
-}
-
 pub(crate) unsafe fn scan_se(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -100,17 +54,9 @@ pub(crate) unsafe fn scan_se(
         }
     }
 
-    let mut sorted_points = left_front.to_vec();
-    sorted_points.sort_unstable_by_key(|p| (p.y, p.x));
-
-    let grouped_points = group_scan_points(&left_front);
-
     let iv_left: Vec<ScanPoint> = left_front.to_vec();
 
-    AnalyzedSe::new(
-        structuring_element.to_vec(),
-        FlatSe::new(iv_left, grouped_points),
-    )
+    AnalyzedSe::new(structuring_element.to_vec(), FlatSe::new(iv_left))
 }
 
 #[repr(C)]

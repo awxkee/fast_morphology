@@ -26,21 +26,18 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::se_scan::{FilterBounds, ScanPoint};
+use crate::se_scan::ScanPoint;
 
 #[derive(Debug, Clone)]
 pub(crate) struct FlatSe {
     /// Significant points { x, y }
     pub(crate) element_offsets: Vec<ScanPoint>,
-    /// Precomputed filter bounds { x, y, horizontal_length }
-    pub(crate) filter_bounds: Vec<FilterBounds>,
 }
 
 impl FlatSe {
-    pub fn new(vec: Vec<ScanPoint>, filter_bounds_process: Vec<FilterBounds>) -> FlatSe {
+    pub fn new(vec: Vec<ScanPoint>) -> FlatSe {
         FlatSe {
             element_offsets: vec,
-            filter_bounds: filter_bounds_process,
         }
     }
 }

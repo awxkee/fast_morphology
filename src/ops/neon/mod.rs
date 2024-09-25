@@ -27,18 +27,5 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 mod morph_op;
-mod morph_op_4_rows;
-mod morph_rgb;
-mod morph_rgb_4_rows;
-mod morph_rgba;
-mod morph_rgba_4_rows;
-mod op;
-mod utils;
 
 pub use morph_op::MorphOpFilterNeon2DRow;
-pub use morph_op_4_rows::MorphOpFilterNeon2D4Rows;
-pub use morph_rgb::MorphOpFilterRgbNeon2DRow;
-pub use morph_rgb_4_rows::MorphOpFilterRgbNeon2D4Rows;
-pub use morph_rgba::MorphOpFilterRgbaNeon2DRow;
-pub use morph_rgba_4_rows::MorphOpFilterRgbaNeon2D4Rows;
-pub use op::{fast_morph_op_1d_neon, fast_morph_op_3d_neon, fast_morph_op_4d_neon};

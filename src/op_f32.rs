@@ -35,7 +35,7 @@ use crate::structuring_element::KernelShape;
 use crate::{ImageSize, MorphologyThreadingPolicy};
 use crate::morph_gray_alpha::make_morphology_gray_alpha;
 
-/// Dilate a gray (planar) image
+/// Dilate a gray (planar) stored in u16 image
 ///
 /// # Arguments
 ///
@@ -47,9 +47,9 @@ use crate::morph_gray_alpha::make_morphology_gray_alpha;
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn dilate(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn dilate_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -57,7 +57,7 @@ pub fn dilate(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology::<u8, { MorphOp::Dilate as u8 }>(
+        make_morphology::<f32, { MorphOp::Dilate as u8 }>(
             src,
             dst,
             image_size,
@@ -69,7 +69,7 @@ pub fn dilate(
     }
 }
 
-/// Dilate an RGB image
+/// Dilate an RGB stored in u16 image
 ///
 /// # Arguments
 ///
@@ -81,9 +81,9 @@ pub fn dilate(
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn dilate_rgb(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn dilate_rgb_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -91,7 +91,7 @@ pub fn dilate_rgb(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology_rgb::<u8, { MorphOp::Dilate as u8 }>(
+        make_morphology_rgb::<f32, { MorphOp::Dilate as u8 }>(
             src,
             dst,
             image_size,
@@ -103,7 +103,7 @@ pub fn dilate_rgb(
     }
 }
 
-/// Erode a gray (planar) image
+/// Erode a gray (planar) stored in u16 image
 ///
 /// # Arguments
 ///
@@ -115,9 +115,9 @@ pub fn dilate_rgb(
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn erode(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn erode_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -125,7 +125,7 @@ pub fn erode(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology::<u8, { MorphOp::Erode as u8 }>(
+        make_morphology::<f32, { MorphOp::Erode as u8 }>(
             src,
             dst,
             image_size,
@@ -137,7 +137,7 @@ pub fn erode(
     }
 }
 
-/// Erode an RGB image
+/// Erode an RGB image stored in u16
 ///
 /// # Arguments
 ///
@@ -149,9 +149,9 @@ pub fn erode(
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn erode_rgb(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn erode_rgb_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -159,7 +159,7 @@ pub fn erode_rgb(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology_rgb::<u8, { MorphOp::Erode as u8 }>(
+        make_morphology_rgb::<f32, { MorphOp::Erode as u8 }>(
             src,
             dst,
             image_size,
@@ -171,7 +171,7 @@ pub fn erode_rgb(
     }
 }
 
-/// Erode an RGBA image
+/// Erode an RGBA image stored in u16
 ///
 /// # Arguments
 ///
@@ -183,9 +183,9 @@ pub fn erode_rgb(
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn erode_rgba(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn erode_rgba_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -193,7 +193,7 @@ pub fn erode_rgba(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology_rgba::<u8, { MorphOp::Erode as u8 }>(
+        make_morphology_rgba::<f32, { MorphOp::Erode as u8 }>(
             src,
             dst,
             image_size,
@@ -205,7 +205,7 @@ pub fn erode_rgba(
     }
 }
 
-/// Dilate an RGBA image
+/// Dilate an RGBA image stored in u16
 ///
 /// # Arguments
 ///
@@ -217,9 +217,9 @@ pub fn erode_rgba(
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn dilate_rgba(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn dilate_rgba_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -227,7 +227,7 @@ pub fn dilate_rgba(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology_rgba::<u8, { MorphOp::Dilate as u8 }>(
+        make_morphology_rgba::<f32, { MorphOp::Dilate as u8 }>(
             src,
             dst,
             image_size,
@@ -251,9 +251,9 @@ pub fn dilate_rgba(
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn erode_gray_alpha(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn erode_gray_alpha_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -261,7 +261,7 @@ pub fn erode_gray_alpha(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology_gray_alpha::<u8, { MorphOp::Erode as u8 }>(
+        make_morphology_gray_alpha::<f32, { MorphOp::Erode as u8 }>(
             src,
             dst,
             image_size,
@@ -285,9 +285,9 @@ pub fn erode_gray_alpha(
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
 /// * `threading_policy`: Threads usage policy
 ///
-pub fn dilate_gray_alpha(
-    src: &[u8],
-    dst: &mut [u8],
+pub fn dilate_gray_alpha_f32(
+    src: &[f32],
+    dst: &mut [f32],
     image_size: ImageSize,
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
@@ -295,7 +295,7 @@ pub fn dilate_gray_alpha(
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
-        make_morphology_gray_alpha::<u8, { MorphOp::Dilate as u8 }>(
+        make_morphology_gray_alpha::<f32, { MorphOp::Dilate as u8 }>(
             src,
             dst,
             image_size,

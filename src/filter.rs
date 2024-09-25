@@ -30,130 +30,81 @@ use crate::filter_op_declare::{Arena, MorthOpFilterFlat2DRow};
 use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-use crate::ops::neon::{MorphOpFilterNeon2D4Rows, MorphOpFilterNeon2DRow};
+use crate::ops::neon::MorphOpFilterNeon2DRow;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use crate::ops::sse::{MorphOpFilterSse2D4Rows, MorphOpFilterSse2DRow};
-use crate::ops::{MorphFilterFlat2D4Rows, MorphFilterFlat2DRow};
+use crate::ops::sse::{MorphOpFilterSse2DRow};
+use crate::ops::MorphFilterFlat2DRow;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::ImageSize;
+use crate::morph_base::MorphNativeOp;
 
-pub struct MorthFilterFlat2DRow {
-    pub(crate) handler: Box<dyn MorthOpFilterFlat2DRow + Sync + Send>,
+pub struct MorthFilterFlat2DRow<T>
+where
+    T: 'static,
+{
+    pub(crate) handler: Box<dyn MorthOpFilterFlat2DRow<T> + Sync + Send>,
 }
 
-impl MorthOpFilterFlat2DRow for MorthFilterFlat2DRow {
+impl<T> MorthOpFilterFlat2DRow<T> for MorthFilterFlat2DRow<T> {
     unsafe fn dispatch_row(
         &self,
-        src: &[u8],
-        dst: &UnsafeSlice<u8>,
+        arena: &Arena<T>,
+        dst: &UnsafeSlice<T>,
         image_size: ImageSize,
         analyzed_se: AnalyzedSe,
         y: usize,
-        arena: &Option<Arena>,
     ) {
         self.handler
-            .dispatch_row(src, dst, image_size, analyzed_se, y, arena)
+            .dispatch_row(arena, dst, image_size, analyzed_se, y)
     }
 }
 
-impl MorthFilterFlat2DRow {
-    pub fn new(op: MorphOp) -> MorthFilterFlat2DRow {
+impl<T> MorthFilterFlat2DRow<T>
+where
+    T: Copy + 'static + MorphNativeOp<T>,
+{
+    pub fn new(op: MorphOp) -> MorthFilterFlat2DRow<T> {
         MorthFilterFlat2DRow {
             handler: match op {
                 MorphOp::Dilate => {
-                    let mut _result: Box<dyn MorthOpFilterFlat2DRow + Sync + Send> =
+                    let mut _result: Box<dyn MorthOpFilterFlat2DRow<T> + Sync + Send> =
                         Box::new(MorphFilterFlat2DRow::<{ MorphOp::Dilate as u8 }>::default());
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-                    {
-                        _result = Box::new(
-                            MorphOpFilterNeon2DRow::<{ MorphOp::Dilate as u8 }>::default(),
-                        );
-                    }
-                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                    {
-                        _result =
-                            Box::new(MorphOpFilterSse2DRow::<{ MorphOp::Dilate as u8 }>::default());
+                    if std::any::type_name::<T>() == "u8" {
+                        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                        {
+                            _result = Box::new(
+                                MorphOpFilterNeon2DRow::<{ MorphOp::Dilate as u8 }>::default(),
+                            );
+                        }
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        {
+                            _result = Box::new(
+                                MorphOpFilterSse2DRow::<{ MorphOp::Dilate as u8 }>::default(),
+                            );
+                        }
                     }
                     _result
                 }
                 MorphOp::Erode => {
-                    let mut _result: Box<dyn MorthOpFilterFlat2DRow + Sync + Send> =
+                    let mut _result: Box<dyn MorthOpFilterFlat2DRow<T> + Sync + Send> =
                         Box::new(MorphFilterFlat2DRow::<{ MorphOp::Erode as u8 }>::default());
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-                    {
-                        _result =
-                            Box::new(MorphOpFilterNeon2DRow::<{ MorphOp::Erode as u8 }>::default());
-                    }
-                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                    {
-                        _result =
-                            Box::new(MorphOpFilterSse2DRow::<{ MorphOp::Erode as u8 }>::default());
-                    }
-                    _result
-                }
-            },
-        }
-    }
-}
-
-pub struct MorthFilterFlat2D4Rows {
-    pub(crate) handler: Box<dyn MorthOpFilterFlat2DRow + Sync + Send>,
-}
-
-impl MorthFilterFlat2D4Rows {
-    pub fn new(op: MorphOp) -> MorthFilterFlat2D4Rows {
-        MorthFilterFlat2D4Rows {
-            handler: match op {
-                MorphOp::Dilate => {
-                    let mut _result: Box<dyn MorthOpFilterFlat2DRow + Sync + Send> =
-                        Box::new(MorphFilterFlat2D4Rows::<{ MorphOp::Dilate as u8 }>::default());
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-                    {
-                        _result = Box::new(
-                            MorphOpFilterNeon2D4Rows::<{ MorphOp::Dilate as u8 }>::default(),
-                        );
-                    }
-                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                    {
-                        _result = Box::new(
-                            MorphOpFilterSse2D4Rows::<{ MorphOp::Dilate as u8 }>::default(),
-                        );
-                    }
-                    _result
-                }
-                MorphOp::Erode => {
-                    let mut _result: Box<dyn MorthOpFilterFlat2DRow + Sync + Send> =
-                        Box::new(MorphFilterFlat2D4Rows::<{ MorphOp::Erode as u8 }>::default());
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-                    {
-                        _result = Box::new(
-                            MorphOpFilterNeon2D4Rows::<{ MorphOp::Erode as u8 }>::default(),
-                        );
-                    }
-                    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-                    {
-                        _result = Box::new(
-                            MorphOpFilterSse2D4Rows::<{ MorphOp::Erode as u8 }>::default(),
-                        );
+                    if std::any::type_name::<T>() == "u8" {
+                        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                        {
+                            _result = Box::new(
+                                MorphOpFilterNeon2DRow::<{ MorphOp::Erode as u8 }>::default(),
+                            );
+                        }
+                        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+                        {
+                            _result = Box::new(
+                                MorphOpFilterSse2DRow::<{ MorphOp::Erode as u8 }>::default(),
+                            );
+                        }
                     }
                     _result
                 }
             },
         }
-    }
-}
-
-impl MorthOpFilterFlat2DRow for MorthFilterFlat2D4Rows {
-    unsafe fn dispatch_row(
-        &self,
-        src: &[u8],
-        dst: &UnsafeSlice<u8>,
-        image_size: ImageSize,
-        analyzed_se: AnalyzedSe,
-        y: usize,
-        arena: &Option<Arena>,
-    ) {
-        self.handler
-            .dispatch_row(src, dst, image_size, analyzed_se, y, arena);
     }
 }

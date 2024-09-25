@@ -26,56 +26,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-extern crate core;
+mod deinterleave_rgb;
+mod deinterleave_rgba;
+pub mod v_load;
 
-mod arena;
-mod arena_roi;
-mod border_mode;
-mod filter;
-mod filter_op_declare;
-mod flat_se;
-mod img_size;
-mod morph_base;
-mod morph_gray_alpha;
-mod morph_rgb;
-mod morph_rgba;
-mod op;
-mod op_f32;
-mod op_impl;
-mod op_type;
-mod op_u16;
-mod ops;
-mod packing;
-mod se_scan;
-mod structuring_element;
-mod thread_policy;
-mod unsafe_slice;
-
-pub use border_mode::BorderMode;
-pub use img_size::ImageSize;
-pub use op::dilate;
-pub use op::dilate_gray_alpha;
-pub use op::dilate_rgb;
-pub use op::dilate_rgba;
-pub use op::erode;
-pub use op::erode_gray_alpha;
-pub use op::erode_rgb;
-pub use op::erode_rgba;
-pub use op_f32::dilate_f32;
-pub use op_f32::dilate_gray_alpha_f32;
-pub use op_f32::dilate_rgb_f32;
-pub use op_f32::dilate_rgba_f32;
-pub use op_f32::erode_f32;
-pub use op_f32::erode_gray_alpha_f32;
-pub use op_f32::erode_rgb_f32;
-pub use op_f32::erode_rgba_f32;
-pub use op_u16::dilate_gray_alpha_u16;
-pub use op_u16::dilate_rgb_u16;
-pub use op_u16::dilate_rgba_u16;
-pub use op_u16::dilate_u16;
-pub use op_u16::erode_gray_alpha_u16;
-pub use op_u16::erode_rgb_u16;
-pub use op_u16::erode_rgba_u16;
-pub use op_u16::erode_u16;
-pub use structuring_element::KernelShape;
-pub use thread_policy::MorphologyThreadingPolicy;
+pub use deinterleave_rgb::deinterleave_rgb_sse;
+pub use deinterleave_rgba::deinterleave_rgba_sse;
+pub use v_load::*;

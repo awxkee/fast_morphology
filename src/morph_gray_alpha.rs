@@ -26,56 +26,47 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-extern crate core;
+use crate::morph_base::MorphNativeOp;
+use crate::op_impl::make_morphology;
+use crate::packing::{GrayAlphaPackable, UnpackedGrayAlpha};
+use crate::{BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy};
 
-mod arena;
-mod arena_roi;
-mod border_mode;
-mod filter;
-mod filter_op_declare;
-mod flat_se;
-mod img_size;
-mod morph_base;
-mod morph_gray_alpha;
-mod morph_rgb;
-mod morph_rgba;
-mod op;
-mod op_f32;
-mod op_impl;
-mod op_type;
-mod op_u16;
-mod ops;
-mod packing;
-mod se_scan;
-mod structuring_element;
-mod thread_policy;
-mod unsafe_slice;
-
-pub use border_mode::BorderMode;
-pub use img_size::ImageSize;
-pub use op::dilate;
-pub use op::dilate_gray_alpha;
-pub use op::dilate_rgb;
-pub use op::dilate_rgba;
-pub use op::erode;
-pub use op::erode_gray_alpha;
-pub use op::erode_rgb;
-pub use op::erode_rgba;
-pub use op_f32::dilate_f32;
-pub use op_f32::dilate_gray_alpha_f32;
-pub use op_f32::dilate_rgb_f32;
-pub use op_f32::dilate_rgba_f32;
-pub use op_f32::erode_f32;
-pub use op_f32::erode_gray_alpha_f32;
-pub use op_f32::erode_rgb_f32;
-pub use op_f32::erode_rgba_f32;
-pub use op_u16::dilate_gray_alpha_u16;
-pub use op_u16::dilate_rgb_u16;
-pub use op_u16::dilate_rgba_u16;
-pub use op_u16::dilate_u16;
-pub use op_u16::erode_gray_alpha_u16;
-pub use op_u16::erode_rgb_u16;
-pub use op_u16::erode_rgba_u16;
-pub use op_u16::erode_u16;
-pub use structuring_element::KernelShape;
-pub use thread_policy::MorphologyThreadingPolicy;
+pub(crate) unsafe fn make_morphology_gray_alpha<T, const OP_TYPE: u8>(
+    src: &[T],
+    dst: &mut [T],
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String>
+where
+    T: GrayAlphaPackable<T> + Copy + 'static + Sync + Send + Clone + Default + MorphNativeOp<T>,
+{
+    let unpacked = T::unpack(src, image_size);
+    let mut dst_unpacked = UnpackedGrayAlpha::alloc(image_size);
+    if let Err(err) = make_morphology::<T, OP_TYPE>(
+        &unpacked.gray_channel,
+        &mut dst_unpacked.gray_channel,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        threading_policy,
+    ) {
+        return Err(err);
+    }
+    if let Err(err) = make_morphology::<T, OP_TYPE>(
+        &unpacked.alpha_channel,
+        &mut dst_unpacked.alpha_channel,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        threading_policy,
+    ) {
+        return Err(err);
+    }
+    T::pack(&dst_unpacked, dst, image_size);
+    Ok(())
+}

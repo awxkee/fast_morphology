@@ -31,16 +31,17 @@ use crate::border_mode::{reflect_index, reflect_index_101, BorderMode};
 use crate::filter_op_declare::Arena;
 use crate::structuring_element::KernelShape;
 
-pub const PREFERRED_KERNEL_SIZE_FOR_ARENA: usize = 250;
-
-/// Pads an image with *clamp to border* strategy
-pub fn make_arena<const COMPONENTS: usize>(
-    image: &[u8],
+/// Pads an image with chosen border strategy
+pub fn make_arena<T, const COMPONENTS: usize>(
+    image: &[T],
     width: u32,
     height: u32,
     kernel_size: KernelShape,
     border_mode: BorderMode,
-) -> Arena {
+) -> Arena<T>
+where
+    T: Default + Copy,
+{
     let (kw, kh) = (kernel_size.width, kernel_size.height);
 
     let pad_w = kw / 2;
@@ -49,7 +50,7 @@ pub fn make_arena<const COMPONENTS: usize>(
     let new_height = height as usize + 2 * pad_h;
     let new_width = width as usize + 2 * pad_w;
 
-    let mut padded_image = vec![0u8; new_height * new_width * COMPONENTS];
+    let mut padded_image = vec![T::default(); new_height * new_width * COMPONENTS];
 
     let old_stride = width as usize * COMPONENTS;
     let new_stride = new_width * COMPONENTS;
@@ -184,29 +185,6 @@ pub fn make_arena<const COMPONENTS: usize>(
                         for i in 0..COMPONENTS {
                             *padded_image.get_unchecked_mut(v_dst + i) =
                                 *image.get_unchecked(v_src + i);
-                        }
-                    }
-                }
-            }
-        }
-        BorderMode::Constant(constant) => {
-            for i in 0..pad_h {
-                for j in 0..pad_w {
-                    unsafe {
-                        let v_dst = i * new_stride + j * COMPONENTS;
-                        for i in 0..COMPONENTS {
-                            *padded_image.get_unchecked_mut(v_dst + i) = constant[i];
-                        }
-                    }
-                }
-            }
-
-            for i in (height as usize + pad_h)..new_height {
-                for j in (width as usize + pad_w)..new_width {
-                    unsafe {
-                        let v_dst = i * new_stride + j * COMPONENTS;
-                        for i in 0..COMPONENTS {
-                            *padded_image.get_unchecked_mut(v_dst + i) = constant[i];
                         }
                     }
                 }

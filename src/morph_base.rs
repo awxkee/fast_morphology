@@ -26,25 +26,38 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#[cfg(target_arch = "aarch64")]
-use std::arch::aarch64::*;
-#[cfg(target_arch = "arm")]
-use std::arch::arm::*;
+use crate::op_type::MorphOp;
 
-#[inline]
-pub unsafe fn vld3h_u8(ptr: *const u8, fill: u8) -> uint8x8x3_t {
-    let row1 = vld1_u8(ptr);
-    let shift_pack = (ptr.add(8) as *const u32).read_unaligned();
-    let mut transient: [u8; 24] = [fill; 24];
-    vst1_u8(transient.as_mut_ptr(), row1);
-    (transient.as_mut_ptr().add(8) as *mut u32).write_unaligned(shift_pack);
-    vld3_u8(transient.as_ptr())
+pub trait MorphNativeOp<T> {
+    fn op<const OP: u8>(&self, other: T) -> T;
 }
 
-#[inline]
-pub unsafe fn vld4h_u8(ptr: *const u8, fill: u8) -> uint8x8x4_t {
-    let row1 = vld1q_u8(ptr);
-    let mut transient: [u8; 32] = [fill; 32];
-    vst1q_u8(transient.as_mut_ptr(), row1);
-    vld4_u8(transient.as_ptr())
+impl MorphNativeOp<u8> for u8 {
+    fn op<const OP: u8>(&self, other: u8) -> u8 {
+        let morph_op: MorphOp = OP.into();
+        match morph_op {
+            MorphOp::Dilate => (*self).max(other),
+            MorphOp::Erode => (*self).min(other),
+        }
+    }
+}
+
+impl MorphNativeOp<u16> for u16 {
+    fn op<const OP: u8>(&self, other: u16) -> u16 {
+        let morph_op: MorphOp = OP.into();
+        match morph_op {
+            MorphOp::Dilate => (*self).max(other),
+            MorphOp::Erode => (*self).min(other),
+        }
+    }
+}
+
+impl MorphNativeOp<f32> for f32 {
+    fn op<const OP: u8>(&self, other: f32) -> f32 {
+        let morph_op: MorphOp = OP.into();
+        match morph_op {
+            MorphOp::Dilate => (*self).max(other),
+            MorphOp::Erode => (*self).min(other),
+        }
+    }
 }

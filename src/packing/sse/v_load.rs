@@ -95,7 +95,7 @@ pub unsafe fn _mm_load_pack_x1_5(ptr: *const u8) -> (__m128i, __m128i) {
 pub unsafe fn _mm_store_pack_x1_5(ptr: *mut u8, v: (__m128i, __m128i)) {
     _mm_storeu_si128(ptr as *mut __m128i, v.0);
     let reg1 = v.1;
-    std::ptr::copy_nonoverlapping(&reg1 as *const _ as * const u8, ptr.add(16), 8);
+    std::ptr::copy_nonoverlapping(&reg1 as *const _ as *const u8, ptr.add(16), 8);
 }
 
 #[inline]

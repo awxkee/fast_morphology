@@ -316,17 +316,17 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     opencv::core::set_use_ipp(false).expect("Failed to disable IPP");
     opencv::core::set_use_optimized(false).expect("Failed to disable opts");
 
-    exec_bench_rgb(c, 4);
+    // exec_bench_rgb(c, 4);
     // exec_bench_rgb(c, 7);
     // exec_bench_rgb(c, 10);
     // exec_bench_rgb(c, 20);
     // exec_bench_rgb(c, 30);
     //
-    // exec_bench_rgba(c, 4);
-    // exec_bench_rgba(c, 7);
-    // exec_bench_rgba(c, 10);
-    // exec_bench_rgba(c, 20);
-    // exec_bench_rgba(c, 30);
+    exec_bench_rgba(c, 4);
+    exec_bench_rgba(c, 7);
+    exec_bench_rgba(c, 10);
+    exec_bench_rgba(c, 20);
+    exec_bench_rgba(c, 30);
 
     exec_bench_gray(c, 4);
     // exec_bench_gray(c, 7);
