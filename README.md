@@ -30,7 +30,7 @@ let img = ImageReader::open("./assets/fruits.jpg")
           .unwrap();
 let new_image = morphology_image(
     img,
-    MorphOp::Dilate,
+    MorphExOp::Dilate,
     &structuring_element,
     KernelShape::new(se_size, se_size),
     BorderMode::default(),
