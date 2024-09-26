@@ -26,6 +26,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::avx::morph_gradient_avx;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::neon::morph_gradient_neon;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -66,6 +68,9 @@ impl MorphGradient<u8> for u8 {
         {
             if std::arch::is_x86_feature_detected!("sse4.1") {
                 _dispatcher = morph_gradient_sse;
+            }
+            if std::arch::is_x86_feature_detected!("avx2") {
+                _dispatcher = morph_gradient_avx;
             }
         }
         _dispatcher(dilation, erosion, dst)

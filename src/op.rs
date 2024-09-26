@@ -26,6 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use std::time::Instant;
 use crate::border_mode::BorderMode;
 use crate::difference::MorphGradient;
 use crate::morph_gray_alpha::make_morphology_gray_alpha;
@@ -554,7 +555,9 @@ pub fn morphology_rgb(
                 border_mode,
                 threading_policy,
             )?;
+            let start_time = Instant::now();
             u8::morph_gradient(&dilation, &erosion, dst);
+            println!("end time {:?}", start_time.elapsed());
             Ok(())
         }
         MorphExOp::TopHat => {
