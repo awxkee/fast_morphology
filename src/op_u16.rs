@@ -27,6 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::border_mode::BorderMode;
+use crate::difference::MorphGradient;
 use crate::morph_gray_alpha::make_morphology_gray_alpha;
 use crate::morph_rgb::make_morphology_rgb;
 use crate::morph_rgba::make_morphology_rgba;
@@ -34,7 +35,6 @@ use crate::op_impl::make_morphology;
 use crate::op_type::MorphOp;
 use crate::structuring_element::KernelShape;
 use crate::{ImageSize, MorphExOp, MorphologyThreadingPolicy};
-use crate::difference::MorphGradient;
 
 /// Dilate a gray (planar) stored in u16 image
 ///

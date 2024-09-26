@@ -1,7 +1,7 @@
 # Fast morphology in pure Rust
 
 This crate provides fast 2D arbitrary shaped structuring element for planar, RGB and RGBA images.
-Library provides high performance erosion, dilation, closing and opening.
+Library provides high performance erosion, dilation, closing, opening, tophat, gradient and blackhat.
 
 In most cases performance when implemented fully in hardware faster than OpenCV.
 
@@ -43,7 +43,7 @@ new_image.save("dilated.jpg").unwrap();
 
 ## Results
 
-Here is some examply bokeh effect
+Here is some example bokeh effect
 
 <p float="left">
     <img src="https://github.com/awxkee/fast_morphology/blob/master/assets/fruits.jpg?raw=true" width="273" height="409">

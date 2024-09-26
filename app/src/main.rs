@@ -1,6 +1,6 @@
 use fast_morphology::{
-    dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, BorderMode, ImageSize,
-    KernelShape, MorphExOp, MorphologyThreadingPolicy,
+    dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, morphology_rgba,
+    BorderMode, ImageSize, KernelShape, MorphExOp, MorphologyThreadingPolicy,
 };
 use image::{DynamicImage, EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
@@ -67,7 +67,7 @@ fn gaussian_kernel(size: usize, sigma: f32) -> Vec<Vec<f32>> {
 }
 
 fn main() {
-    let radius_size = 67;
+    let radius_size = 5;
     let mut structuring_element = circle_se(radius_size);
 
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
@@ -99,7 +99,7 @@ fn main() {
     let mut channel_2_dst = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
     let mut channel_3_dst = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
 
-    for ((((a, dst_1), dst_2), dst_3)) in bytes
+    for (((a, dst_1), dst_2), dst_3) in bytes
         .chunks_exact(3)
         .zip(&mut channel_1_src)
         .zip(&mut channel_2_src)
@@ -168,9 +168,10 @@ fn main() {
     let mut dst = vec![0u8; rgba_image.len()];
 
     let exec_time = Instant::now();
-    erode_rgba(
+    morphology_rgba(
         &rgba_image,
         &mut dst,
+        MorphExOp::TopHat,
         image_size,
         &structuring_element,
         KernelShape::new(se_size, se_size),
@@ -229,7 +230,7 @@ fn main() {
 
     let new_image = morphology_image(
         img,
-        MorphExOp::TopHat,
+        MorphExOp::Gradient,
         &structuring_element,
         KernelShape::new(se_size, se_size),
         BorderMode::default(),

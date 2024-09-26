@@ -26,6 +26,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+use crate::neon::morph_gradient_neon;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::sse::morph_gradient_sse;
 use num_traits::SaturatingSub;
 use std::ops::Sub;
 
@@ -53,7 +57,18 @@ where
 
 impl MorphGradient<u8> for u8 {
     fn morph_gradient(dilation: &[u8], erosion: &[u8], dst: &mut [u8]) {
-        make_morph_gradient_sat(dilation, erosion, dst)
+        let mut _dispatcher: fn(&[u8], &[u8], &mut [u8]) = make_morph_gradient_sat;
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        {
+            _dispatcher = morph_gradient_neon;
+        }
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if std::arch::is_x86_feature_detected!("sse4.1") {
+                _dispatcher = morph_gradient_sse;
+            }
+        }
+        _dispatcher(dilation, erosion, dst)
     }
 }
 

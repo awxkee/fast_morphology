@@ -32,6 +32,7 @@ extern crate core;
 mod arena;
 mod arena_roi;
 mod border_mode;
+mod difference;
 #[cfg(feature = "image")]
 mod dynamic_image;
 mod filter;
@@ -42,6 +43,7 @@ mod morph_base;
 mod morph_gray_alpha;
 mod morph_rgb;
 mod morph_rgba;
+mod neon;
 mod op;
 mod op_f32;
 mod op_impl;
@@ -50,10 +52,11 @@ mod op_u16;
 mod ops;
 mod packing;
 mod se_scan;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod sse;
 mod structuring_element;
 mod thread_policy;
 mod unsafe_slice;
-mod difference;
 
 pub use border_mode::BorderMode;
 #[cfg(feature = "image")]
