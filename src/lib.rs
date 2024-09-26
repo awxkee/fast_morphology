@@ -53,6 +53,7 @@ mod se_scan;
 mod structuring_element;
 mod thread_policy;
 mod unsafe_slice;
+mod difference;
 
 pub use border_mode::BorderMode;
 #[cfg(feature = "image")]

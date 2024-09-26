@@ -26,37 +26,45 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use num_traits::SaturatingSub;
+use std::ops::Sub;
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub(crate) enum MorphOp {
-    Dilate = 0,
-    Erode = 1,
+pub trait MorphGradient<T> {
+    fn morph_gradient(dilation: &[T], erosion: &[T], dst: &mut [T]);
 }
 
-impl From<u8> for MorphOp {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => MorphOp::Dilate,
-            1 => MorphOp::Erode,
-            _ => panic!("Not implemented"),
-        }
+fn make_morph_gradient_sat<T>(dilation: &[T], erosion: &[T], dst: &mut [T])
+where
+    T: SaturatingSub + Default + Clone + Copy,
+{
+    for ((dilation, erosion), dst) in dilation.iter().zip(erosion.iter()).zip(dst.iter_mut()) {
+        *dst = dilation.saturating_sub(erosion);
     }
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub enum MorphExOp {
-    Dilate = 0,
-    Erode = 1,
-    /// It is the dilation followed by erosion
-    Opening = 2,
-    /// It is the erosion followed by dilation
-    Closing = 3,
-    /// It is the difference between dilation and erosion of an image.
-    Gradient = 4,
-    /// It is the difference between input image and Opening of the image
-    TopHat = 5,
-    /// It is the difference between the closing of the input image and input image
-    BlackHat = 6,
+fn make_morph_gradient<T>(dilation: &[T], erosion: &[T], dst: &mut [T])
+where
+    T: Sub<Output = T> + Default + Clone + Copy,
+{
+    for ((dilation, erosion), dst) in dilation.iter().zip(erosion.iter()).zip(dst.iter_mut()) {
+        *dst = *dilation - *erosion;
+    }
+}
+
+impl MorphGradient<u8> for u8 {
+    fn morph_gradient(dilation: &[u8], erosion: &[u8], dst: &mut [u8]) {
+        make_morph_gradient_sat(dilation, erosion, dst)
+    }
+}
+
+impl MorphGradient<u16> for u16 {
+    fn morph_gradient(dilation: &[u16], erosion: &[u16], dst: &mut [u16]) {
+        make_morph_gradient_sat(dilation, erosion, dst)
+    }
+}
+
+impl MorphGradient<f32> for f32 {
+    fn morph_gradient(dilation: &[f32], erosion: &[f32], dst: &mut [f32]) {
+        make_morph_gradient(dilation, erosion, dst)
+    }
 }

@@ -2,7 +2,7 @@ workspace = { members = ["app"] }
 
 [package]
 name = "fast_morphology"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Fast morphological operations for images"
 readme = "README.md"
@@ -16,7 +16,6 @@ repository = "https://github.com/awxkee/fast_morphology.git"
 exclude = ["*.jpg", "*.png"]
 
 [dependencies]
-colorutils-rs = "0.5.12"
 num-traits = "0.2.19"
 rayon = "1.10.0"
 image = { version = "0.25.0", optional = true, default-features = false }

@@ -27,6 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::border_mode::BorderMode;
+use crate::difference::MorphGradient;
 use crate::morph_gray_alpha::make_morphology_gray_alpha;
 use crate::morph_rgb::make_morphology_rgb;
 use crate::morph_rgba::make_morphology_rgba;
@@ -349,7 +350,7 @@ pub fn morphology_rgba_f32(
             border_mode,
             threading_policy,
         ),
-        MorphExOp::Closing => {
+        MorphExOp::Opening => {
             let mut transient = vec![0f32; dst.len()];
             erode_rgba_f32(
                 src,
@@ -370,7 +371,7 @@ pub fn morphology_rgba_f32(
                 threading_policy,
             )
         }
-        MorphExOp::Opening => {
+        MorphExOp::Closing => {
             let mut transient = vec![0f32; dst.len()];
             dilate_rgba_f32(
                 src,
@@ -390,6 +391,60 @@ pub fn morphology_rgba_f32(
                 border_mode,
                 threading_policy,
             )
+        }
+        MorphExOp::Gradient => {
+            let mut dilation = vec![0.; dst.len()];
+            dilate_rgba_f32(
+                src,
+                &mut dilation,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            let mut erosion = vec![0.; dst.len()];
+            erode_rgba_f32(
+                &src,
+                &mut erosion,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            f32::morph_gradient(&dilation, &erosion, dst);
+            Ok(())
+        }
+        MorphExOp::TopHat => {
+            let mut opened = vec![0.; dst.len()];
+            morphology_rgba_f32(
+                src,
+                &mut opened,
+                MorphExOp::Opening,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            f32::morph_gradient(&src, &opened, dst);
+            Ok(())
+        }
+        MorphExOp::BlackHat => {
+            let mut closed = vec![0.; dst.len()];
+            morphology_rgba_f32(
+                src,
+                &mut closed,
+                MorphExOp::Closing,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            f32::morph_gradient(&closed, &src, dst);
+            Ok(())
         }
     }
 }
@@ -436,7 +491,7 @@ pub fn morphology_rgb_f32(
             border_mode,
             threading_policy,
         ),
-        MorphExOp::Closing => {
+        MorphExOp::Opening => {
             let mut transient = vec![0f32; dst.len()];
             erode_rgb_f32(
                 src,
@@ -457,7 +512,7 @@ pub fn morphology_rgb_f32(
                 threading_policy,
             )
         }
-        MorphExOp::Opening => {
+        MorphExOp::Closing => {
             let mut transient = vec![0f32; dst.len()];
             dilate_rgb_f32(
                 src,
@@ -477,6 +532,60 @@ pub fn morphology_rgb_f32(
                 border_mode,
                 threading_policy,
             )
+        }
+        MorphExOp::Gradient => {
+            let mut dilation = vec![0.; dst.len()];
+            dilate_rgb_f32(
+                src,
+                &mut dilation,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            let mut erosion = vec![0.; dst.len()];
+            erode_rgb_f32(
+                &src,
+                &mut erosion,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            f32::morph_gradient(&dilation, &erosion, dst);
+            Ok(())
+        }
+        MorphExOp::TopHat => {
+            let mut opened = vec![0.; dst.len()];
+            morphology_rgb_f32(
+                src,
+                &mut opened,
+                MorphExOp::Opening,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            f32::morph_gradient(&src, &opened, dst);
+            Ok(())
+        }
+        MorphExOp::BlackHat => {
+            let mut closed = vec![0.; dst.len()];
+            morphology_rgb_f32(
+                src,
+                &mut closed,
+                MorphExOp::Closing,
+                image_size,
+                structuring_element,
+                structuring_element_size,
+                border_mode,
+                threading_policy,
+            )?;
+            f32::morph_gradient(&closed, &src, dst);
+            Ok(())
         }
     }
 }

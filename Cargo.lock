@@ -261,6 +261,7 @@ checksum = "0b023947811758c97c59bf9d1c188fd619ad4718dcaa767947df1cadb14f39f4"
 dependencies = [
  "glob",
  "libc",
+ "libloading",
 ]
 
 [[package]]
@@ -293,17 +294,6 @@ name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
-
-[[package]]
-name = "colorutils-rs"
-version = "0.5.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "964565f4c740d7a05e259762290f556c4a91aefae1c3e964aa21432270513416"
-dependencies = [
- "erydanos",
- "half",
- "num-traits",
-]
 
 [[package]]
 name = "crc32fast"
@@ -400,15 +390,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
-name = "erydanos"
-version = "0.2.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d60718e8a3b1adb22e0789c1ff070dfc68ab53a37a1202348ef252d9c836635d"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "exr"
 version = "1.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -426,9 +407,8 @@ dependencies = [
 
 [[package]]
 name = "fast_morphology"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
- "colorutils-rs",
  "image",
  "num-traits",
  "rayon",
@@ -677,6 +657,16 @@ dependencies = [
  "arbitrary",
  "cc",
  "once_cell",
+]
+
+[[package]]
+name = "libloading"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
+dependencies = [
+ "cfg-if",
+ "windows-targets",
 ]
 
 [[package]]

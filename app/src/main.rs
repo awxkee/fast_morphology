@@ -7,6 +7,7 @@ use opencv::core::{
     Mat, MatTrait, MatTraitConstManual, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC3,
 };
 use opencv::imgproc;
+use opencv::imgproc::{MORPH_BLACKHAT, MORPH_TOPHAT};
 use std::time::Instant;
 
 fn circle_se(radius: usize) -> Vec<u8> {
@@ -66,7 +67,7 @@ fn gaussian_kernel(size: usize, sigma: f32) -> Vec<Vec<f32>> {
 }
 
 fn main() {
-    let radius_size = 35;
+    let radius_size = 67;
     let mut structuring_element = circle_se(radius_size);
 
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
@@ -208,9 +209,10 @@ fn main() {
     let exec_time = Instant::now();
 
     let mut dst_mat = Mat::default();
-    imgproc::erode(
+    imgproc::morphology_ex(
         &mat,
         &mut dst_mat,
+        MORPH_TOPHAT,
         &kernel,
         Point::new(-1, -1),
         1,
@@ -227,7 +229,7 @@ fn main() {
 
     let new_image = morphology_image(
         img,
-        MorphExOp::Closing,
+        MorphExOp::TopHat,
         &structuring_element,
         KernelShape::new(se_size, se_size),
         BorderMode::default(),
