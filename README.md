@@ -10,9 +10,10 @@ If you are not familiar read the [OpenCV doc](https://docs.opencv.org/4.x/d9/d61
 ### Example
 
 ```rust
-dilate_rgb(
+morphology_rgb(
     &src,
     &mut dst,
+    MorphExOp::TopHat,
     ImageSize::new(500, 500),
     &structuring_element,
     KernelShape::new(15, 15),
