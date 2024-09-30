@@ -190,7 +190,7 @@ where
             }
         }
         unsafe {
-            for _ in 0..height {
+            for y in 0..height {
                 let mut _cx = 0usize;
 
                 if let Some(row_handle) = _row_handle {
@@ -202,15 +202,17 @@ where
                     _cx += 1;
                 }
 
-                dst = dst.get_unchecked_mut(arena_stride..);
-                src = src.get_unchecked(stride..);
+                if y + 1 < height {
+                    dst = dst.get_unchecked_mut(arena_stride..);
+                    src = src.get_unchecked(stride..);
+                }
             }
         }
     } else {
         let mut dst = arena;
         let mut src = roi;
         unsafe {
-            for _ in 0..height {
+            for y in 0..height {
                 let mut _cx = 0usize;
 
                 while _cx < stride {
@@ -218,8 +220,10 @@ where
                     _cx += 1;
                 }
 
-                dst = dst.get_unchecked_mut(arena_stride..);
-                src = src.get_unchecked(stride..);
+                if y + 1 < height {
+                    dst = dst.get_unchecked_mut(arena_stride..);
+                    src = src.get_unchecked(stride..);
+                }
             }
         }
     }
