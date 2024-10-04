@@ -27,6 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use num_traits::{AsPrimitive, Euclid, FromPrimitive, Signed};
+use std::ops::Index;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default)]
@@ -41,6 +42,8 @@ pub enum BorderMode {
     Reflect,
     /// If filter goes out of bounds image will be replicated with rule `gfedcb|abcdefgh|gfedcba`
     Reflect101,
+    /// If filter goes out of bounds image will be replicated with provided constant
+    Constant,
 }
 
 #[inline]
@@ -100,4 +103,44 @@ where
             .as_();
     }
     i.as_()
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
+pub struct MorphScalar {
+    pub v0: f64,
+    pub v1: f64,
+    pub v2: f64,
+    pub v3: f64,
+}
+
+impl MorphScalar {
+    pub fn new(v0: f64, v1: f64, v2: f64, v3: f64) -> Self {
+        Self { v0, v1, v2, v3 }
+    }
+
+    pub fn dup(v: f64) -> Self {
+        Self { v0: v, v1: v, v2: v, v3: v }
+    }
+}
+
+impl Default for MorphScalar {
+    fn default() -> Self {
+        Self::new(0.0, 0.0, 0.0, 0.0)
+    }
+}
+
+impl Index<usize> for MorphScalar {
+    type Output = f64;
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.v0,
+            1 => &self.v1,
+            2 => &self.v2,
+            3 => &self.v3,
+            _ => {
+                panic!("Index out of bounds: {}", index);
+            }
+        }
+    }
 }

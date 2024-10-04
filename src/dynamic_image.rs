@@ -26,6 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::border_mode::MorphScalar;
 use crate::op_type::MorphExOp;
 use crate::{
     morphology, morphology_gray_alpha_u16, morphology_gray_u16, morphology_rgb, morphology_rgb_f32,
@@ -47,6 +48,7 @@ use image::{
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morphology_image(
@@ -55,6 +57,7 @@ pub fn morphology_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<DynamicImage, String> {
     match image {
@@ -65,6 +68,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -78,6 +82,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -91,6 +96,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -104,6 +110,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -117,6 +124,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -130,6 +138,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -143,6 +152,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -156,6 +166,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -169,6 +180,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -182,6 +194,7 @@ pub fn morphology_image(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             ) {
                 Ok(img) => Ok(DynamicImage::from(img)),
@@ -202,6 +215,7 @@ pub fn morphology_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_gray_image(
@@ -210,6 +224,7 @@ pub fn morph_gray_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<GrayImage, String> {
     let bytes = image.as_raw();
@@ -223,6 +238,7 @@ pub fn morph_gray_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = GrayImage::from_raw(size.width as u32, size.height as u32, dst_bytes) {
@@ -242,6 +258,7 @@ pub fn morph_gray_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_rgb_image(
@@ -250,6 +267,7 @@ pub fn morph_rgb_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<RgbImage, String> {
     let bytes = image.as_raw();
@@ -263,6 +281,7 @@ pub fn morph_rgb_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = RgbImage::from_raw(size.width as u32, size.height as u32, dst_bytes) {
@@ -282,6 +301,7 @@ pub fn morph_rgb_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_gray_alpha_image(
@@ -290,6 +310,7 @@ pub fn morph_gray_alpha_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<GrayAlphaImage, String> {
     let bytes = image.as_raw();
@@ -303,6 +324,7 @@ pub fn morph_gray_alpha_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = GrayAlphaImage::from_raw(size.width as u32, size.height as u32, dst_bytes) {
@@ -322,6 +344,7 @@ pub fn morph_gray_alpha_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_rgba_image(
@@ -330,6 +353,7 @@ pub fn morph_rgba_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<RgbaImage, String> {
     let bytes = image.as_raw();
@@ -343,6 +367,7 @@ pub fn morph_rgba_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = RgbaImage::from_raw(size.width as u32, size.height as u32, dst_bytes) {
@@ -362,6 +387,7 @@ pub fn morph_rgba_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_gray_alpha_16_image(
@@ -370,6 +396,7 @@ pub fn morph_gray_alpha_16_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<ImageBuffer<LumaA<u16>, Vec<u16>>, String> {
     let bytes = image.as_raw();
@@ -383,6 +410,7 @@ pub fn morph_gray_alpha_16_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = ImageBuffer::<LumaA<u16>, Vec<u16>>::from_raw(
@@ -406,6 +434,7 @@ pub fn morph_gray_alpha_16_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_gray_16_image(
@@ -414,6 +443,7 @@ pub fn morph_gray_16_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<ImageBuffer<Luma<u16>, Vec<u16>>, String> {
     let bytes = image.as_raw();
@@ -427,6 +457,7 @@ pub fn morph_gray_16_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = ImageBuffer::<Luma<u16>, Vec<u16>>::from_raw(
@@ -450,6 +481,7 @@ pub fn morph_gray_16_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_rgb_16_image(
@@ -458,6 +490,7 @@ pub fn morph_rgb_16_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<ImageBuffer<Rgb<u16>, Vec<u16>>, String> {
     let bytes = image.as_raw();
@@ -471,6 +504,7 @@ pub fn morph_rgb_16_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = ImageBuffer::<Rgb<u16>, Vec<u16>>::from_raw(
@@ -494,6 +528,7 @@ pub fn morph_rgb_16_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_rgba_16_image(
@@ -502,6 +537,7 @@ pub fn morph_rgba_16_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<ImageBuffer<Rgba<u16>, Vec<u16>>, String> {
     let bytes = image.as_raw();
@@ -515,6 +551,7 @@ pub fn morph_rgba_16_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = ImageBuffer::<Rgba<u16>, Vec<u16>>::from_raw(
@@ -538,6 +575,7 @@ pub fn morph_rgba_16_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_rgba_f32_image(
@@ -546,6 +584,7 @@ pub fn morph_rgba_f32_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<Rgba32FImage, String> {
     let bytes = image.as_raw();
@@ -559,6 +598,7 @@ pub fn morph_rgba_f32_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = Rgba32FImage::from_raw(size.width as u32, size.height as u32, dst_bytes) {
@@ -578,6 +618,7 @@ pub fn morph_rgba_f32_image(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morph_rgb_f32_image(
@@ -586,6 +627,7 @@ pub fn morph_rgb_f32_image(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<Rgb32FImage, String> {
     let bytes = image.as_raw();
@@ -599,6 +641,7 @@ pub fn morph_rgb_f32_image(
         structuring_element,
         structuring_element_size,
         border_mode,
+        border_scalar,
         threading_policy,
     )?;
     if let Some(img) = Rgb32FImage::from_raw(size.width as u32, size.height as u32, dst_bytes) {

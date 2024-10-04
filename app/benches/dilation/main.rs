@@ -29,7 +29,8 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use fast_morphology::{
-    dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy,
+    dilate, dilate_rgb, dilate_rgba, BorderMode, ImageSize, KernelShape, MorphScalar,
+    MorphologyThreadingPolicy,
 };
 use image::{EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
@@ -103,6 +104,7 @@ fn exec_bench_rgb(c: &mut Criterion, size: usize) {
                     &structuring_element_15,
                     KernelShape::new(se_size_15, se_size_15),
                     BorderMode::default(),
+                    MorphScalar::default(),
                     MorphologyThreadingPolicy::Adaptive,
                 )
                 .unwrap();
@@ -185,6 +187,7 @@ fn exec_bench_gray(c: &mut Criterion, size: usize) {
                     &structuring_element_15,
                     KernelShape::new(se_size_15, se_size_15),
                     BorderMode::default(),
+                    MorphScalar::default(),
                     MorphologyThreadingPolicy::Adaptive,
                 )
                 .unwrap();
@@ -267,6 +270,7 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
                     &structuring_element_15,
                     KernelShape::new(se_size_15, se_size_15),
                     BorderMode::default(),
+                    MorphScalar::default(),
                     MorphologyThreadingPolicy::Adaptive,
                 )
                 .unwrap();

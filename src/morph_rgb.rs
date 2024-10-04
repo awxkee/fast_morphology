@@ -26,11 +26,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::border_mode::MorphScalar;
 use crate::filter::Row2DFilter;
 use crate::morph_base::MorphNativeOp;
 use crate::op_impl::make_morphology;
 use crate::packing::{RgbPackable, UnpackedRgbImage};
 use crate::{BorderMode, ImageSize, KernelShape, MorphologyThreadingPolicy};
+use num_traits::AsPrimitive;
 
 pub(crate) unsafe fn make_morphology_rgb<T, const OP_TYPE: u8>(
     src: &[T],
@@ -39,6 +41,7 @@ pub(crate) unsafe fn make_morphology_rgb<T, const OP_TYPE: u8>(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String>
 where
@@ -51,6 +54,7 @@ where
         + Default
         + MorphNativeOp<T>
         + Row2DFilter<T>,
+    f64: AsPrimitive<T>,
 {
     if src.len() != dst.len() || dst.len() != image_size.width * image_size.height * 3 {
         return Err(format!(
@@ -69,6 +73,7 @@ where
         structuring_element,
         structuring_element_size,
         border_mode,
+        MorphScalar::dup(border_scalar[0]),
         threading_policy,
     )?;
     make_morphology::<T, OP_TYPE>(
@@ -78,6 +83,7 @@ where
         structuring_element,
         structuring_element_size,
         border_mode,
+        MorphScalar::dup(border_scalar[1]),
         threading_policy,
     )?;
     make_morphology::<T, OP_TYPE>(
@@ -87,6 +93,7 @@ where
         structuring_element,
         structuring_element_size,
         border_mode,
+        MorphScalar::dup(border_scalar[2]),
         threading_policy,
     )?;
     T::pack(&dst_unpacked, dst, image_size);

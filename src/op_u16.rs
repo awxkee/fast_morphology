@@ -26,7 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use crate::border_mode::BorderMode;
+use crate::border_mode::{BorderMode, MorphScalar};
 use crate::difference::MorphGradient;
 use crate::morph_gray_alpha::make_morphology_gray_alpha;
 use crate::morph_rgb::make_morphology_rgb;
@@ -46,6 +46,7 @@ use crate::{ImageSize, MorphExOp, MorphologyThreadingPolicy};
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn dilate_u16(
@@ -55,6 +56,7 @@ pub fn dilate_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -65,6 +67,7 @@ pub fn dilate_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -80,6 +83,7 @@ pub fn dilate_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn dilate_rgb_u16(
@@ -89,6 +93,7 @@ pub fn dilate_rgb_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -99,6 +104,7 @@ pub fn dilate_rgb_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -114,6 +120,7 @@ pub fn dilate_rgb_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn erode_u16(
@@ -123,6 +130,7 @@ pub fn erode_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -133,6 +141,7 @@ pub fn erode_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -148,6 +157,7 @@ pub fn erode_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn erode_rgb_u16(
@@ -157,6 +167,7 @@ pub fn erode_rgb_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -167,6 +178,7 @@ pub fn erode_rgb_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -182,6 +194,7 @@ pub fn erode_rgb_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn erode_rgba_u16(
@@ -191,6 +204,7 @@ pub fn erode_rgba_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -201,6 +215,7 @@ pub fn erode_rgba_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -216,6 +231,7 @@ pub fn erode_rgba_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn dilate_rgba_u16(
@@ -225,6 +241,7 @@ pub fn dilate_rgba_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -235,6 +252,7 @@ pub fn dilate_rgba_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -250,6 +268,7 @@ pub fn dilate_rgba_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn erode_gray_alpha_u16(
@@ -259,6 +278,7 @@ pub fn erode_gray_alpha_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -269,6 +289,7 @@ pub fn erode_gray_alpha_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -284,6 +305,7 @@ pub fn erode_gray_alpha_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn dilate_gray_alpha_u16(
@@ -293,6 +315,7 @@ pub fn dilate_gray_alpha_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     unsafe {
@@ -303,6 +326,7 @@ pub fn dilate_gray_alpha_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         )
     }
@@ -319,6 +343,7 @@ pub fn dilate_gray_alpha_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morphology_gray_alpha_u16(
@@ -329,6 +354,7 @@ pub fn morphology_gray_alpha_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     match morph_op {
@@ -339,6 +365,7 @@ pub fn morphology_gray_alpha_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Erode => erode_gray_alpha_u16(
@@ -348,6 +375,7 @@ pub fn morphology_gray_alpha_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Opening => {
@@ -359,6 +387,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             dilate_gray_alpha_u16(
@@ -368,6 +397,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -380,6 +410,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             erode_gray_alpha_u16(
@@ -389,6 +420,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -401,6 +433,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             let mut erosion = vec![0u16; dst.len()];
@@ -411,6 +444,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&dilation, &erosion, dst);
@@ -426,6 +460,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&src, &opened, dst);
@@ -441,6 +476,7 @@ pub fn morphology_gray_alpha_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&closed, &src, dst);
@@ -460,6 +496,7 @@ pub fn morphology_gray_alpha_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morphology_gray_u16(
@@ -470,6 +507,7 @@ pub fn morphology_gray_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     match morph_op {
@@ -480,6 +518,7 @@ pub fn morphology_gray_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Erode => erode_u16(
@@ -489,6 +528,7 @@ pub fn morphology_gray_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Opening => {
@@ -500,6 +540,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             dilate_u16(
@@ -509,6 +550,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -521,6 +563,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             erode_u16(
@@ -530,6 +573,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -542,6 +586,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             let mut erosion = vec![0u16; dst.len()];
@@ -552,6 +597,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&dilation, &erosion, dst);
@@ -567,6 +613,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&src, &opened, dst);
@@ -582,6 +629,7 @@ pub fn morphology_gray_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&closed, &src, dst);
@@ -601,6 +649,7 @@ pub fn morphology_gray_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morphology_rgb_u16(
@@ -611,6 +660,7 @@ pub fn morphology_rgb_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     match morph_op {
@@ -621,6 +671,7 @@ pub fn morphology_rgb_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Erode => erode_rgb_u16(
@@ -630,6 +681,7 @@ pub fn morphology_rgb_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Opening => {
@@ -641,6 +693,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             dilate_rgb_u16(
@@ -650,6 +703,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -662,6 +716,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             erode_rgb_u16(
@@ -671,6 +726,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -683,6 +739,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             let mut erosion = vec![0u16; dst.len()];
@@ -693,6 +750,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&dilation, &erosion, dst);
@@ -708,6 +766,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&src, &opened, dst);
@@ -723,6 +782,7 @@ pub fn morphology_rgb_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&closed, &src, dst);
@@ -742,6 +802,7 @@ pub fn morphology_rgb_u16(
 /// * `structuring_element`: 2D structuring element
 /// * `structuring_element_size`: (W,H) structuring element size
 /// * `border_mode`: Border handling mode, for reference see [BorderMode]
+/// * `border_scalar`: [MorphScalar] scalar value that will be used to fill border in [BorderMode::Constant]
 /// * `threading_policy`: Threads usage policy
 ///
 pub fn morphology_rgba_u16(
@@ -752,6 +813,7 @@ pub fn morphology_rgba_u16(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
     match morph_op {
@@ -762,6 +824,7 @@ pub fn morphology_rgba_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Erode => erode_rgba_u16(
@@ -771,6 +834,7 @@ pub fn morphology_rgba_u16(
             structuring_element,
             structuring_element_size,
             border_mode,
+            border_scalar,
             threading_policy,
         ),
         MorphExOp::Opening => {
@@ -782,6 +846,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             dilate_rgba_u16(
@@ -791,6 +856,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -803,6 +869,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             erode_rgba_u16(
@@ -812,6 +879,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )
         }
@@ -824,6 +892,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             let mut erosion = vec![0u16; dst.len()];
@@ -834,6 +903,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&dilation, &erosion, dst);
@@ -849,6 +919,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&src, &opened, dst);
@@ -864,6 +935,7 @@ pub fn morphology_rgba_u16(
                 structuring_element,
                 structuring_element_size,
                 border_mode,
+                border_scalar,
                 threading_policy,
             )?;
             u16::morph_gradient(&closed, &src, dst);

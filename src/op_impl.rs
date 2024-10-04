@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::arena::make_arena;
-use crate::border_mode::BorderMode;
+use crate::border_mode::{BorderMode, MorphScalar};
 use crate::filter::Row2DFilter;
 use crate::filter_op_declare::MorthOpFilterFlat2DRow;
 use crate::morph_base::MorphNativeOp;
@@ -37,6 +37,7 @@ use crate::structuring_element::KernelShape;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::{ImageSize, MorphologyThreadingPolicy};
 use std::sync::Arc;
+use num_traits::AsPrimitive;
 
 pub(crate) unsafe fn make_morphology<T, const OP_TYPE: u8>(
     src: &[T],
@@ -45,10 +46,12 @@ pub(crate) unsafe fn make_morphology<T, const OP_TYPE: u8>(
     structuring_element: &[u8],
     structuring_element_size: KernelShape,
     border_mode: BorderMode,
+    border_constant: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String>
 where
     T: Copy + Default + 'static + Send + Sync + MorphNativeOp<T> + Row2DFilter<T>,
+    f64: AsPrimitive<T>,
 {
     if src.len() != dst.len() {
         return Err("Source slice size and destination must match"
@@ -96,6 +99,7 @@ where
         height as u32,
         structuring_element_size,
         border_mode,
+        border_constant,
     );
     let arena_arc = Arc::new(arena);
 

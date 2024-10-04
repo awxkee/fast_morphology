@@ -1,7 +1,4 @@
-use fast_morphology::{
-    dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, morphology_rgba,
-    BorderMode, ImageSize, KernelShape, MorphExOp, MorphologyThreadingPolicy,
-};
+use fast_morphology::{dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, morphology_rgba, BorderMode, ImageSize, KernelShape, MorphExOp, MorphScalar, MorphologyThreadingPolicy};
 use image::{DynamicImage, EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
     Mat, MatTrait, MatTraitConstManual, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC3,
@@ -123,6 +120,7 @@ fn main() {
         &structuring_element,
         KernelShape::new(se_size, se_size),
         border_mode,
+        MorphScalar::default(),
         MorphologyThreadingPolicy::default(),
     )
     .unwrap();
@@ -134,6 +132,7 @@ fn main() {
         &structuring_element,
         KernelShape::new(se_size, se_size),
         border_mode,
+        MorphScalar::default(),
         MorphologyThreadingPolicy::default(),
     )
     .unwrap();
@@ -145,6 +144,7 @@ fn main() {
         &structuring_element,
         KernelShape::new(se_size, se_size),
         border_mode,
+        MorphScalar::default(),
         MorphologyThreadingPolicy::default(),
     )
     .unwrap();
@@ -176,6 +176,7 @@ fn main() {
         &structuring_element,
         KernelShape::new(se_size, se_size),
         border_mode,
+        MorphScalar::default(),
         MorphologyThreadingPolicy::default(),
     )
     .unwrap();
@@ -234,6 +235,7 @@ fn main() {
         &structuring_element,
         KernelShape::new(se_size, se_size),
         BorderMode::default(),
+        MorphScalar::default(),
         MorphologyThreadingPolicy::default(),
     )
     .unwrap();

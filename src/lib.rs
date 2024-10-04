@@ -61,7 +61,7 @@ mod structuring_element;
 mod thread_policy;
 mod unsafe_slice;
 
-pub use border_mode::BorderMode;
+pub use border_mode::{BorderMode, MorphScalar};
 #[cfg(feature = "image")]
 pub use dynamic_image::*;
 pub use img_size::ImageSize;

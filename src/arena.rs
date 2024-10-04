@@ -27,9 +27,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::arena_roi::copy_roi;
-use crate::border_mode::{reflect_index, reflect_index_101, BorderMode};
+use crate::border_mode::{reflect_index, reflect_index_101, BorderMode, MorphScalar};
 use crate::filter_op_declare::Arena;
 use crate::structuring_element::KernelShape;
+use num_traits::AsPrimitive;
 
 /// Pads an image with chosen border strategy
 pub fn make_arena<T, const COMPONENTS: usize>(
@@ -38,9 +39,11 @@ pub fn make_arena<T, const COMPONENTS: usize>(
     height: u32,
     kernel_size: KernelShape,
     border_mode: BorderMode,
+    border_scalar: MorphScalar,
 ) -> Arena<T>
 where
-    T: Default + Copy,
+    T: Default + Copy + 'static,
+    f64: AsPrimitive<T>,
 {
     let (kw, kh) = (kernel_size.width, kernel_size.height);
 
@@ -142,6 +145,20 @@ where
                             for i in 0..COMPONENTS {
                                 *padded_image.get_unchecked_mut(v_dst + i) =
                                     *image.get_unchecked(v_src + i);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        BorderMode::Constant => {
+            for ranges in filling_ranges.iter() {
+                for i in ranges.0.clone() {
+                    for j in ranges.1.clone() {
+                        unsafe {
+                            let v_dst = i * new_stride + j * COMPONENTS;
+                            for i in 0..COMPONENTS {
+                                *padded_image.get_unchecked_mut(v_dst + i) = border_scalar[i].as_();
                             }
                         }
                     }
