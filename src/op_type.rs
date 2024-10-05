@@ -46,6 +46,7 @@ impl From<u8> for MorphOp {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+/// Declares morphology operations
 pub enum MorphExOp {
     Dilate = 0,
     Erode = 1,
