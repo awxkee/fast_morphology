@@ -2,7 +2,7 @@ workspace = { members = ["app"] }
 
 [package]
 name = "fast_morphology"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Fast morphological operations for images"
 readme = "README.md"
