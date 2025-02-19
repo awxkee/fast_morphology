@@ -54,14 +54,14 @@ where
         y: usize,
     ) {
         let width = image_size.width;
-        let stride = image_size.width;
+        let stride = image_size.width * arena.components;
 
         let src = &arena.arena;
 
         let dx = arena.pad_w as i32;
         let dy = arena.pad_h as i32;
 
-        let arena_width = arena.width;
+        let arena_stride = arena.width * arena.components;
 
         let offsets = analyzed_se
             .left_front
@@ -69,38 +69,40 @@ where
             .iter()
             .map(|&x| {
                 src.get_unchecked(
-                    ((x.y + dy + y as i32) as usize * arena_width + (x.x + dx) as usize)..,
+                    ((x.y + dy + y as i32) as usize * arena_stride
+                        + (x.x + dx) as usize * arena.components)..,
                 )
             })
             .collect::<Vec<_>>();
 
-        let length = analyzed_se.left_front.element_offsets.iter().len();
+        let length = analyzed_se.left_front.element_offsets.len();
+        let total_width = width * arena.components;
 
-        let mut _cx = 0usize;
+        let mut cx = 0usize;
 
-        for x in (_cx..width.saturating_sub(4)).step_by(4) {
-            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
-            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(x + 1);
-            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(x + 2);
-            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(x + 3);
+        while cx + 4 < total_width {
+            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(cx);
+            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 1);
+            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 2);
+            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 3);
 
             for i in 1..length {
-                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
-                k1 = k1.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 1));
-                k2 = k2.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 2));
-                k3 = k3.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 3));
+                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx));
+                k1 = k1.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx + 1));
+                k2 = k2.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx + 2));
+                k3 = k3.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx + 3));
             }
 
-            let dst_offset = y * stride + x;
+            let dst_offset = y * stride + cx;
 
             dst.write(dst_offset, k0);
             dst.write(dst_offset + 1, k1);
             dst.write(dst_offset + 2, k2);
             dst.write(dst_offset + 3, k3);
-            _cx = x;
+            cx += 4;
         }
 
-        for x in _cx..width {
+        for x in cx..total_width {
             let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
 
             for i in 1..length {

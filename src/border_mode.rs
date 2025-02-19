@@ -120,7 +120,12 @@ impl MorphScalar {
     }
 
     pub fn dup(v: f64) -> Self {
-        Self { v0: v, v1: v, v2: v, v3: v }
+        Self {
+            v0: v,
+            v1: v,
+            v2: v,
+            v3: v,
+        }
     }
 }
 

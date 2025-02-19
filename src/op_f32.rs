@@ -27,10 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::border_mode::{BorderMode, MorphScalar};
-use crate::difference::MorphGradient;
-use crate::morph_gray_alpha::make_morphology_gray_alpha;
-use crate::morph_rgb::make_morphology_rgb;
-use crate::morph_rgba::make_morphology_rgba;
+use crate::op::morph_impl;
 use crate::op_impl::make_morphology;
 use crate::op_type::MorphOp;
 use crate::structuring_element::KernelShape;
@@ -59,18 +56,16 @@ pub fn dilate_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology::<f32, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Dilate as u8 }, 1>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Dilate an RGB stored in f32 image
@@ -96,18 +91,16 @@ pub fn dilate_rgb_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgb::<f32, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Dilate as u8 }, 3>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode a gray (planar) stored in f32 image
@@ -133,18 +126,16 @@ pub fn erode_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology::<f32, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Erode as u8 }, 1>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode an RGB image stored in f32
@@ -170,18 +161,16 @@ pub fn erode_rgb_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgb::<f32, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Erode as u8 }, 3>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode an RGBA image stored in f32
@@ -207,18 +196,16 @@ pub fn erode_rgba_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgba::<f32, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Erode as u8 }, 4>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Dilate an RGBA image stored in f32
@@ -244,18 +231,16 @@ pub fn dilate_rgba_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgba::<f32, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Dilate as u8 }, 4>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode Gray image with alpha
@@ -281,18 +266,16 @@ pub fn erode_gray_alpha_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_gray_alpha::<f32, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Erode as u8 }, 2>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Dilate an Gray image with alpha
@@ -318,18 +301,16 @@ pub fn dilate_gray_alpha_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_gray_alpha::<f32, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<f32, { MorphOp::Dilate as u8 }, 2>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Morphology an RGBA image stored in f32
@@ -357,132 +338,17 @@ pub fn morphology_rgba_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    match morph_op {
-        MorphExOp::Dilate => dilate_rgba_f32(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Erode => erode_rgba_f32(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Opening => {
-            let mut transient = vec![0f32; dst.len()];
-            erode_rgba_f32(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            dilate_rgba_f32(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Closing => {
-            let mut transient = vec![0f32; dst.len()];
-            dilate_rgba_f32(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            erode_rgba_f32(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Gradient => {
-            let mut dilation = vec![0.; dst.len()];
-            dilate_rgba_f32(
-                src,
-                &mut dilation,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            let mut erosion = vec![0.; dst.len()];
-            erode_rgba_f32(
-                &src,
-                &mut erosion,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            f32::morph_gradient(&dilation, &erosion, dst);
-            Ok(())
-        }
-        MorphExOp::TopHat => {
-            let mut opened = vec![0.; dst.len()];
-            morphology_rgba_f32(
-                src,
-                &mut opened,
-                MorphExOp::Opening,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            f32::morph_gradient(&src, &opened, dst);
-            Ok(())
-        }
-        MorphExOp::BlackHat => {
-            let mut closed = vec![0.; dst.len()];
-            morphology_rgba_f32(
-                src,
-                &mut closed,
-                MorphExOp::Closing,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            f32::morph_gradient(&closed, &src, dst);
-            Ok(())
-        }
-    }
+    morph_impl::<f32, 4>(
+        src,
+        dst,
+        morph_op,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Morphology an RGB image stored in f32
@@ -510,130 +376,15 @@ pub fn morphology_rgb_f32(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    match morph_op {
-        MorphExOp::Dilate => dilate_rgb_f32(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Erode => erode_rgb_f32(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Opening => {
-            let mut transient = vec![0f32; dst.len()];
-            erode_rgb_f32(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            dilate_rgb_f32(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Closing => {
-            let mut transient = vec![0f32; dst.len()];
-            dilate_rgb_f32(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            erode_rgb_f32(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Gradient => {
-            let mut dilation = vec![0.; dst.len()];
-            dilate_rgb_f32(
-                src,
-                &mut dilation,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            let mut erosion = vec![0.; dst.len()];
-            erode_rgb_f32(
-                &src,
-                &mut erosion,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            f32::morph_gradient(&dilation, &erosion, dst);
-            Ok(())
-        }
-        MorphExOp::TopHat => {
-            let mut opened = vec![0.; dst.len()];
-            morphology_rgb_f32(
-                src,
-                &mut opened,
-                MorphExOp::Opening,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            f32::morph_gradient(&src, &opened, dst);
-            Ok(())
-        }
-        MorphExOp::BlackHat => {
-            let mut closed = vec![0.; dst.len()];
-            morphology_rgb_f32(
-                src,
-                &mut closed,
-                MorphExOp::Closing,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            f32::morph_gradient(&closed, &src, dst);
-            Ok(())
-        }
-    }
+    morph_impl::<f32, 3>(
+        src,
+        dst,
+        morph_op,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }

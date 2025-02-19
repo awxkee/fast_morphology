@@ -42,9 +42,6 @@ mod filter_op_declare;
 mod flat_se;
 mod img_size;
 mod morph_base;
-mod morph_gray_alpha;
-mod morph_rgb;
-mod morph_rgba;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 mod neon;
 mod op;
@@ -53,7 +50,6 @@ mod op_impl;
 mod op_type;
 mod op_u16;
 mod ops;
-mod packing;
 mod se_scan;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod sse;

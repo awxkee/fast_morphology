@@ -38,52 +38,52 @@ pub fn morph_gradient_neon(dilation: &[u8], erosion: &[u8], dst: &mut [u8]) {
         );
     }
     let length = dilation.len();
-    let mut _cx = 0usize;
+    let mut cx = 0usize;
 
     unsafe {
-        while _cx + 64 < length {
-            let v0_set = vld1q_u8_x4(dilation.get_unchecked(_cx..).as_ptr());
-            let v1_set = vld1q_u8_x4(erosion.get_unchecked(_cx..).as_ptr());
+        while cx + 64 < length {
+            let v0_set = vld1q_u8_x4(dilation.get_unchecked(cx..).as_ptr());
+            let v1_set = vld1q_u8_x4(erosion.get_unchecked(cx..).as_ptr());
             let result_set = uint8x16x4_t(
                 vqsubq_u8(v0_set.0, v1_set.0),
                 vqsubq_u8(v0_set.1, v1_set.1),
                 vqsubq_u8(v0_set.2, v1_set.2),
                 vqsubq_u8(v0_set.3, v1_set.3),
             );
-            vst1q_u8_x4(dst.get_unchecked_mut(_cx..).as_mut_ptr(), result_set);
-            _cx += 64;
+            vst1q_u8_x4(dst.get_unchecked_mut(cx..).as_mut_ptr(), result_set);
+            cx += 64;
         }
 
-        while _cx + 32 < length {
-            let v0_set = vld1q_u8_x2(dilation.get_unchecked(_cx..).as_ptr());
-            let v1_set = vld1q_u8_x2(erosion.get_unchecked(_cx..).as_ptr());
+        while cx + 32 < length {
+            let v0_set = vld1q_u8_x2(dilation.get_unchecked(cx..).as_ptr());
+            let v1_set = vld1q_u8_x2(erosion.get_unchecked(cx..).as_ptr());
             let result_set =
                 uint8x16x2_t(vqsubq_u8(v0_set.0, v1_set.0), vqsubq_u8(v0_set.1, v1_set.1));
-            vst1q_u8_x2(dst.get_unchecked_mut(_cx..).as_mut_ptr(), result_set);
-            _cx += 32;
+            vst1q_u8_x2(dst.get_unchecked_mut(cx..).as_mut_ptr(), result_set);
+            cx += 32;
         }
 
-        while _cx + 16 < length {
-            let v0_set = vld1q_u8(dilation.get_unchecked(_cx..).as_ptr());
-            let v1_set = vld1q_u8(erosion.get_unchecked(_cx..).as_ptr());
+        while cx + 16 < length {
+            let v0_set = vld1q_u8(dilation.get_unchecked(cx..).as_ptr());
+            let v1_set = vld1q_u8(erosion.get_unchecked(cx..).as_ptr());
             let result_set = vqsubq_u8(v0_set, v1_set);
-            vst1q_u8(dst.get_unchecked_mut(_cx..).as_mut_ptr(), result_set);
-            _cx += 16;
+            vst1q_u8(dst.get_unchecked_mut(cx..).as_mut_ptr(), result_set);
+            cx += 16;
         }
 
-        while _cx + 8 < length {
-            let v0_set = vld1_u8(dilation.get_unchecked(_cx..).as_ptr());
-            let v1_set = vld1_u8(erosion.get_unchecked(_cx..).as_ptr());
+        while cx + 8 < length {
+            let v0_set = vld1_u8(dilation.get_unchecked(cx..).as_ptr());
+            let v1_set = vld1_u8(erosion.get_unchecked(cx..).as_ptr());
             let result_set = vqsub_u8(v0_set, v1_set);
-            vst1_u8(dst.get_unchecked_mut(_cx..).as_mut_ptr(), result_set);
-            _cx += 8;
+            vst1_u8(dst.get_unchecked_mut(cx..).as_mut_ptr(), result_set);
+            cx += 8;
         }
 
-        while _cx < length {
-            *dst.get_unchecked_mut(_cx) = dilation
-                .get_unchecked(_cx)
-                .saturating_sub(*erosion.get_unchecked(_cx));
-            _cx += 1;
+        while cx < length {
+            *dst.get_unchecked_mut(cx) = dilation
+                .get_unchecked(cx)
+                .saturating_sub(*erosion.get_unchecked(cx));
+            cx += 1;
         }
     }
 }

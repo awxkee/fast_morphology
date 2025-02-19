@@ -28,14 +28,13 @@
  */
 use crate::border_mode::{BorderMode, MorphScalar};
 use crate::difference::MorphGradient;
-use crate::morph_gray_alpha::make_morphology_gray_alpha;
-use crate::morph_rgb::make_morphology_rgb;
-use crate::morph_rgba::make_morphology_rgba;
+use crate::filter::Row2DFilter;
+use crate::morph_base::MorphNativeOp;
 use crate::op_impl::make_morphology;
 use crate::op_type::{MorphExOp, MorphOp};
 use crate::structuring_element::KernelShape;
 use crate::{ImageSize, MorphologyThreadingPolicy};
-use std::time::Instant;
+use num_traits::AsPrimitive;
 
 /// Dilate a gray (planar) image
 ///
@@ -60,18 +59,16 @@ pub fn dilate(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology::<u8, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Dilate as u8 }, 1>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Dilate an RGB image
@@ -97,18 +94,16 @@ pub fn dilate_rgb(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgb::<u8, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Dilate as u8 }, 3>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode a gray (planar) image
@@ -134,18 +129,16 @@ pub fn erode(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology::<u8, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Erode as u8 }, 1>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode an RGB image
@@ -171,18 +164,16 @@ pub fn erode_rgb(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgb::<u8, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Erode as u8 }, 3>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode an RGBA image
@@ -208,18 +199,16 @@ pub fn erode_rgba(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgba::<u8, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Erode as u8 }, 4>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Dilate an RGBA image
@@ -245,18 +234,16 @@ pub fn dilate_rgba(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_rgba::<u8, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Dilate as u8 }, 4>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Erode Gray image with alpha
@@ -282,18 +269,16 @@ pub fn erode_gray_alpha(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_gray_alpha::<u8, { MorphOp::Erode as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Erode as u8 }, 2>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Dilate an Gray image with alpha
@@ -319,18 +304,16 @@ pub fn dilate_gray_alpha(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    unsafe {
-        make_morphology_gray_alpha::<u8, { MorphOp::Dilate as u8 }>(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        )
-    }
+    make_morphology::<u8, { MorphOp::Dilate as u8 }, 2>(
+        src,
+        dst,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Morphology a gray (planar) image
@@ -358,132 +341,17 @@ pub fn morphology(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    match morph_op {
-        MorphExOp::Dilate => dilate(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Erode => erode(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Opening => {
-            let mut transient = vec![0u8; dst.len()];
-            erode(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            dilate(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Closing => {
-            let mut transient = vec![0u8; dst.len()];
-            dilate(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            erode(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Gradient => {
-            let mut dilation = vec![0u8; dst.len()];
-            dilate(
-                src,
-                &mut dilation,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            let mut erosion = vec![0u8; dst.len()];
-            erode(
-                &src,
-                &mut erosion,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&dilation, &erosion, dst);
-            Ok(())
-        }
-        MorphExOp::TopHat => {
-            let mut opened = vec![0u8; dst.len()];
-            morphology(
-                src,
-                &mut opened,
-                MorphExOp::Opening,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&src, &opened, dst);
-            Ok(())
-        }
-        MorphExOp::BlackHat => {
-            let mut closed = vec![0u8; dst.len()];
-            morphology(
-                src,
-                &mut closed,
-                MorphExOp::Closing,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&closed, &src, dst);
-            Ok(())
-        }
-    }
+    morph_impl::<u8, 1>(
+        src,
+        dst,
+        morph_op,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Morphology a RGB 8-bit image
@@ -511,134 +379,17 @@ pub fn morphology_rgb(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    match morph_op {
-        MorphExOp::Dilate => dilate_rgb(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Erode => erode_rgb(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Opening => {
-            let mut transient = vec![0u8; dst.len()];
-            erode_rgb(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            dilate_rgb(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Closing => {
-            let mut transient = vec![0u8; dst.len()];
-            dilate_rgb(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            erode_rgb(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Gradient => {
-            let mut dilation = vec![0u8; dst.len()];
-            dilate_rgb(
-                src,
-                &mut dilation,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            let mut erosion = vec![0u8; dst.len()];
-            erode_rgb(
-                &src,
-                &mut erosion,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            let start_time = Instant::now();
-            u8::morph_gradient(&dilation, &erosion, dst);
-            println!("end time {:?}", start_time.elapsed());
-            Ok(())
-        }
-        MorphExOp::TopHat => {
-            let mut opened = vec![0u8; dst.len()];
-            morphology_rgb(
-                src,
-                &mut opened,
-                MorphExOp::Opening,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&src, &opened, dst);
-            Ok(())
-        }
-        MorphExOp::BlackHat => {
-            let mut closed = vec![0u8; dst.len()];
-            morphology_rgb(
-                src,
-                &mut closed,
-                MorphExOp::Closing,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&closed, &src, dst);
-            Ok(())
-        }
-    }
+    morph_impl::<u8, 3>(
+        src,
+        dst,
+        morph_op,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }
 
 /// Morphology a Planar image with alpha 8-bit image
@@ -666,8 +417,38 @@ pub fn morphology_gray_alpha(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
+    morph_impl::<u8, 2>(
+        src,
+        dst,
+        morph_op,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
+}
+
+pub(crate) fn morph_impl<
+    T: Copy + MorphGradient<T> + Default + 'static + Send + Sync + MorphNativeOp<T> + Row2DFilter<T>,
+    const CN: usize,
+>(
+    src: &[T],
+    dst: &mut [T],
+    morph_op: MorphExOp,
+    image_size: ImageSize,
+    structuring_element: &[u8],
+    structuring_element_size: KernelShape,
+    border_mode: BorderMode,
+    border_scalar: MorphScalar,
+    threading_policy: MorphologyThreadingPolicy,
+) -> Result<(), String>
+where
+    f64: AsPrimitive<T>,
+{
     match morph_op {
-        MorphExOp::Dilate => dilate_gray_alpha(
+        MorphExOp::Dilate => make_morphology::<T, { MorphOp::Dilate as u8 }, CN>(
             src,
             dst,
             image_size,
@@ -677,7 +458,7 @@ pub fn morphology_gray_alpha(
             border_scalar,
             threading_policy,
         ),
-        MorphExOp::Erode => erode_gray_alpha(
+        MorphExOp::Erode => make_morphology::<T, { MorphOp::Erode as u8 }, CN>(
             src,
             dst,
             image_size,
@@ -688,8 +469,8 @@ pub fn morphology_gray_alpha(
             threading_policy,
         ),
         MorphExOp::Opening => {
-            let mut transient = vec![0u8; dst.len()];
-            erode_gray_alpha(
+            let mut transient = vec![T::default(); dst.len()];
+            make_morphology::<T, { MorphOp::Erode as u8 }, CN>(
                 src,
                 &mut transient,
                 image_size,
@@ -699,7 +480,7 @@ pub fn morphology_gray_alpha(
                 border_scalar,
                 threading_policy,
             )?;
-            dilate_gray_alpha(
+            make_morphology::<T, { MorphOp::Dilate as u8 }, CN>(
                 &transient,
                 dst,
                 image_size,
@@ -711,8 +492,8 @@ pub fn morphology_gray_alpha(
             )
         }
         MorphExOp::Closing => {
-            let mut transient = vec![0u8; dst.len()];
-            dilate_gray_alpha(
+            let mut transient = vec![T::default(); dst.len()];
+            make_morphology::<T, { MorphOp::Dilate as u8 }, CN>(
                 src,
                 &mut transient,
                 image_size,
@@ -722,7 +503,7 @@ pub fn morphology_gray_alpha(
                 border_scalar,
                 threading_policy,
             )?;
-            erode_gray_alpha(
+            make_morphology::<T, { MorphOp::Erode as u8 }, CN>(
                 &transient,
                 dst,
                 image_size,
@@ -734,8 +515,8 @@ pub fn morphology_gray_alpha(
             )
         }
         MorphExOp::Gradient => {
-            let mut dilation = vec![0u8; dst.len()];
-            dilate_gray_alpha(
+            let mut dilation = vec![T::default(); dst.len()];
+            make_morphology::<T, { MorphOp::Dilate as u8 }, CN>(
                 src,
                 &mut dilation,
                 image_size,
@@ -745,9 +526,9 @@ pub fn morphology_gray_alpha(
                 border_scalar,
                 threading_policy,
             )?;
-            let mut erosion = vec![0u8; dst.len()];
-            erode_gray_alpha(
-                &src,
+            let mut erosion = vec![T::default(); dst.len()];
+            make_morphology::<T, { MorphOp::Erode as u8 }, CN>(
+                src,
                 &mut erosion,
                 image_size,
                 structuring_element,
@@ -756,12 +537,12 @@ pub fn morphology_gray_alpha(
                 border_scalar,
                 threading_policy,
             )?;
-            u8::morph_gradient(&dilation, &erosion, dst);
+            T::morph_gradient(&dilation, &erosion, dst);
             Ok(())
         }
         MorphExOp::TopHat => {
-            let mut opened = vec![0u8; dst.len()];
-            morphology_gray_alpha(
+            let mut opened = vec![T::default(); dst.len()];
+            morph_impl::<T, CN>(
                 src,
                 &mut opened,
                 MorphExOp::Opening,
@@ -772,12 +553,12 @@ pub fn morphology_gray_alpha(
                 border_scalar,
                 threading_policy,
             )?;
-            u8::morph_gradient(&src, &opened, dst);
+            T::morph_gradient(src, &opened, dst);
             Ok(())
         }
         MorphExOp::BlackHat => {
-            let mut closed = vec![0u8; dst.len()];
-            morphology_gray_alpha(
+            let mut closed = vec![T::default(); dst.len()];
+            morph_impl::<T, CN>(
                 src,
                 &mut closed,
                 MorphExOp::Closing,
@@ -788,7 +569,7 @@ pub fn morphology_gray_alpha(
                 border_scalar,
                 threading_policy,
             )?;
-            u8::morph_gradient(&closed, &src, dst);
+            T::morph_gradient(&closed, src, dst);
             Ok(())
         }
     }
@@ -819,130 +600,15 @@ pub fn morphology_rgba(
     border_scalar: MorphScalar,
     threading_policy: MorphologyThreadingPolicy,
 ) -> Result<(), String> {
-    match morph_op {
-        MorphExOp::Dilate => dilate_rgba(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Erode => erode_rgba(
-            src,
-            dst,
-            image_size,
-            structuring_element,
-            structuring_element_size,
-            border_mode,
-            border_scalar,
-            threading_policy,
-        ),
-        MorphExOp::Opening => {
-            let mut transient = vec![0u8; dst.len()];
-            erode_rgba(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            dilate_rgba(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Closing => {
-            let mut transient = vec![0u8; dst.len()];
-            dilate_rgba(
-                src,
-                &mut transient,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            erode_rgba(
-                &transient,
-                dst,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )
-        }
-        MorphExOp::Gradient => {
-            let mut dilation = vec![0u8; dst.len()];
-            dilate_rgba(
-                src,
-                &mut dilation,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            let mut erosion = vec![0u8; dst.len()];
-            erode_rgba(
-                &src,
-                &mut erosion,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&dilation, &erosion, dst);
-            Ok(())
-        }
-        MorphExOp::TopHat => {
-            let mut opened = vec![0u8; dst.len()];
-            morphology_rgba(
-                src,
-                &mut opened,
-                MorphExOp::Opening,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&src, &opened, dst);
-            Ok(())
-        }
-        MorphExOp::BlackHat => {
-            let mut closed = vec![0u8; dst.len()];
-            morphology_rgba(
-                src,
-                &mut closed,
-                MorphExOp::Closing,
-                image_size,
-                structuring_element,
-                structuring_element_size,
-                border_mode,
-                border_scalar,
-                threading_policy,
-            )?;
-            u8::morph_gradient(&closed, &src, dst);
-            Ok(())
-        }
-    }
+    morph_impl::<u8, 4>(
+        src,
+        dst,
+        morph_op,
+        image_size,
+        structuring_element,
+        structuring_element_size,
+        border_mode,
+        border_scalar,
+        threading_policy,
+    )
 }

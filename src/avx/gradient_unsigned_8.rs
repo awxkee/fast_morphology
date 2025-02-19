@@ -35,7 +35,6 @@ pub fn morph_gradient_avx(dilation: &[u8], erosion: &[u8], dst: &mut [u8]) {
         morph_gradient_avx_impl(dilation, erosion, dst);
     }
 }
-#[inline]
 #[target_feature(enable = "avx2")]
 unsafe fn morph_gradient_avx_impl(dilation: &[u8], erosion: &[u8], dst: &mut [u8]) {
     if dilation.len() != erosion.len() || erosion.len() != dst.len() {
@@ -47,17 +46,17 @@ unsafe fn morph_gradient_avx_impl(dilation: &[u8], erosion: &[u8], dst: &mut [u8
         );
     }
     let length = dilation.len();
-    let mut _cx = 0usize;
+    let mut cx = 0usize;
     unsafe {
-        while _cx + 128 < length {
-            let v0_ptr = dilation.get_unchecked(_cx..).as_ptr();
+        while cx + 128 < length {
+            let v0_ptr = dilation.get_unchecked(cx..).as_ptr();
             let v0_set = (
                 _mm256_loadu_si256(v0_ptr as *const __m256i),
                 _mm256_loadu_si256(v0_ptr.add(32) as *const __m256i),
                 _mm256_loadu_si256(v0_ptr.add(64) as *const __m256i),
                 _mm256_loadu_si256(v0_ptr.add(96) as *const __m256i),
             );
-            let v1_ptr = erosion.get_unchecked(_cx..).as_ptr();
+            let v1_ptr = erosion.get_unchecked(cx..).as_ptr();
             let v1_set = (
                 _mm256_loadu_si256(v1_ptr as *const __m256i),
                 _mm256_loadu_si256(v1_ptr.add(32) as *const __m256i),
@@ -70,21 +69,21 @@ unsafe fn morph_gradient_avx_impl(dilation: &[u8], erosion: &[u8], dst: &mut [u8
                 _mm256_subs_epu8(v0_set.2, v1_set.2),
                 _mm256_subs_epu8(v0_set.3, v1_set.3),
             );
-            let v_dst_ptr = dst.get_unchecked_mut(_cx..).as_mut_ptr();
+            let v_dst_ptr = dst.get_unchecked_mut(cx..).as_mut_ptr();
             _mm256_storeu_si256(v_dst_ptr as *mut __m256i, result_set.0);
             _mm256_storeu_si256(v_dst_ptr.add(32) as *mut __m256i, result_set.1);
             _mm256_storeu_si256(v_dst_ptr.add(64) as *mut __m256i, result_set.2);
             _mm256_storeu_si256(v_dst_ptr.add(96) as *mut __m256i, result_set.3);
-            _cx += 128;
+            cx += 128;
         }
 
-        while _cx + 64 < length {
-            let v0_ptr = dilation.get_unchecked(_cx..).as_ptr();
+        while cx + 64 < length {
+            let v0_ptr = dilation.get_unchecked(cx..).as_ptr();
             let v0_set = (
                 _mm256_loadu_si256(v0_ptr as *const __m256i),
                 _mm256_loadu_si256(v0_ptr.add(32) as *const __m256i),
             );
-            let v1_ptr = erosion.get_unchecked(_cx..).as_ptr();
+            let v1_ptr = erosion.get_unchecked(cx..).as_ptr();
             let v1_set = (
                 _mm256_loadu_si256(v1_ptr as *const __m256i),
                 _mm256_loadu_si256(v1_ptr.add(32) as *const __m256i),
@@ -93,39 +92,39 @@ unsafe fn morph_gradient_avx_impl(dilation: &[u8], erosion: &[u8], dst: &mut [u8
                 _mm256_subs_epu8(v0_set.0, v1_set.0),
                 _mm256_subs_epu8(v0_set.1, v1_set.1),
             );
-            let v_dst_ptr = dst.get_unchecked_mut(_cx..).as_mut_ptr();
+            let v_dst_ptr = dst.get_unchecked_mut(cx..).as_mut_ptr();
             _mm256_storeu_si256(v_dst_ptr as *mut __m256i, result_set.0);
             _mm256_storeu_si256(v_dst_ptr.add(32) as *mut __m256i, result_set.1);
-            _cx += 64;
+            cx += 64;
         }
 
-        while _cx + 32 < length {
-            let v0_ptr = dilation.get_unchecked(_cx..).as_ptr();
+        while cx + 32 < length {
+            let v0_ptr = dilation.get_unchecked(cx..).as_ptr();
             let v0_set = _mm256_loadu_si256(v0_ptr as *const __m256i);
-            let v1_ptr = erosion.get_unchecked(_cx..).as_ptr();
+            let v1_ptr = erosion.get_unchecked(cx..).as_ptr();
             let v1_set = _mm256_loadu_si256(v1_ptr as *const __m256i);
             let result_set = _mm256_subs_epu8(v0_set, v1_set);
-            let v_dst_ptr = dst.get_unchecked_mut(_cx..).as_mut_ptr();
+            let v_dst_ptr = dst.get_unchecked_mut(cx..).as_mut_ptr();
             _mm256_storeu_si256(v_dst_ptr as *mut __m256i, result_set);
-            _cx += 32;
+            cx += 32;
         }
 
-        while _cx + 16 < length {
-            let v0_ptr = dilation.get_unchecked(_cx..).as_ptr();
+        while cx + 16 < length {
+            let v0_ptr = dilation.get_unchecked(cx..).as_ptr();
             let v0_set = _mm_loadu_si128(v0_ptr as *const __m128i);
-            let v1_ptr = erosion.get_unchecked(_cx..).as_ptr();
+            let v1_ptr = erosion.get_unchecked(cx..).as_ptr();
             let v1_set = _mm_loadu_si128(v1_ptr as *const __m128i);
             let result_set = _mm_subs_epu8(v0_set, v1_set);
-            let v_dst_ptr = dst.get_unchecked_mut(_cx..).as_mut_ptr();
+            let v_dst_ptr = dst.get_unchecked_mut(cx..).as_mut_ptr();
             _mm_storeu_si128(v_dst_ptr as *mut __m128i, result_set);
-            _cx += 16;
+            cx += 16;
         }
 
-        while _cx < length {
-            *dst.get_unchecked_mut(_cx) = dilation
-                .get_unchecked(_cx)
-                .saturating_sub(*erosion.get_unchecked(_cx));
-            _cx += 1;
+        while cx < length {
+            *dst.get_unchecked_mut(cx) = dilation
+                .get_unchecked(cx)
+                .saturating_sub(*erosion.get_unchecked(cx));
+            cx += 1;
         }
     }
 }

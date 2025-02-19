@@ -26,28 +26,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 use crate::ImageSize;
 use rayon::ThreadPool;
+use std::num::NonZeroUsize;
+use std::thread::available_parallelism;
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Default)]
 pub enum MorphologyThreadingPolicy {
     Single,
-    Fixed(u8),
+    Fixed(NonZeroUsize),
     #[default]
     Adaptive,
 }
 
 impl MorphologyThreadingPolicy {
-    pub fn get_threads_count(&self, for_size: ImageSize) -> usize {
+    pub fn thread_count(&self, for_size: ImageSize) -> usize {
         match self {
             MorphologyThreadingPolicy::Single => 1,
-            MorphologyThreadingPolicy::Fixed(thread_count) => (*thread_count).max(1) as usize,
-            MorphologyThreadingPolicy::Adaptive => {
-                let box_size = 256 * 256;
-                let new_box_size = for_size.height * for_size.width;
-                (new_box_size / box_size).clamp(1, 16)
-            }
+            MorphologyThreadingPolicy::Adaptive => (for_size.width * for_size.height / (256 * 256))
+                .clamp(1, Self::available_parallelism()),
+            MorphologyThreadingPolicy::Fixed(fixed) => fixed.get(),
         }
     }
 
@@ -55,13 +53,17 @@ impl MorphologyThreadingPolicy {
         if *self == MorphologyThreadingPolicy::Single {
             return None;
         }
-        let threads_count = self.get_threads_count(for_size);
-        match rayon::ThreadPoolBuilder::new()
+        let threads_count = self.thread_count(for_size);
+        rayon::ThreadPoolBuilder::new()
             .num_threads(threads_count)
             .build()
-        {
-            Ok(pool) => Some(pool),
-            Err(_) => None,
-        }
+            .ok()
+    }
+
+    fn available_parallelism() -> usize {
+        available_parallelism()
+            .unwrap_or_else(|_| NonZeroUsize::new(1).unwrap())
+            .get()
+            .max(1)
     }
 }

@@ -33,7 +33,7 @@ use crate::structuring_element::KernelShape;
 use num_traits::AsPrimitive;
 
 /// Pads an image with chosen border strategy
-pub fn make_arena<T, const COMPONENTS: usize>(
+pub fn make_arena<T, const CN: usize>(
     image: &[T],
     width: u32,
     height: u32,
@@ -53,14 +53,14 @@ where
     let new_height = height as usize + 2 * pad_h;
     let new_width = width as usize + 2 * pad_w;
 
-    let mut padded_image = vec![T::default(); new_height * new_width * COMPONENTS];
+    let mut padded_image = vec![T::default(); new_height * new_width * CN];
 
-    let old_stride = width as usize * COMPONENTS;
-    let new_stride = new_width * COMPONENTS;
+    let old_stride = width as usize * CN;
+    let new_stride = new_width * CN;
 
     unsafe {
         copy_roi(
-            padded_image.get_unchecked_mut(pad_h * new_stride + (pad_w * COMPONENTS)..),
+            padded_image.get_unchecked_mut(pad_h * new_stride + (pad_w * CN)..),
             image,
             new_stride,
             old_stride,
@@ -86,9 +86,9 @@ where
                         let y = i.saturating_sub(pad_h).min(height as usize - 1);
                         let x = j.saturating_sub(pad_w).min(width as usize - 1);
                         unsafe {
-                            let v_dst = i * new_stride + j * COMPONENTS;
-                            let v_src = y * old_stride + x * COMPONENTS;
-                            for i in 0..COMPONENTS {
+                            let v_dst = i * new_stride + j * CN;
+                            let v_src = y * old_stride + x * CN;
+                            for i in 0..CN {
                                 *padded_image.get_unchecked_mut(v_dst + i) =
                                     *image.get_unchecked(v_src + i);
                             }
@@ -104,9 +104,9 @@ where
                         let y = (i as i64 - pad_h as i64).rem_euclid(height as i64 - 1) as usize;
                         let x = (j as i64 - pad_w as i64).rem_euclid(width as i64 - 1) as usize;
                         unsafe {
-                            let v_dst = i * new_stride + j * COMPONENTS;
-                            let v_src = y * old_stride + x * COMPONENTS;
-                            for i in 0..COMPONENTS {
+                            let v_dst = i * new_stride + j * CN;
+                            let v_src = y * old_stride + x * CN;
+                            for i in 0..CN {
                                 *padded_image.get_unchecked_mut(v_dst + i) =
                                     *image.get_unchecked(v_src + i);
                             }
@@ -122,9 +122,9 @@ where
                         let y = reflect_index(i as i64 - pad_h as i64, height as i64 - 1);
                         let x = reflect_index(j as i64 - pad_w as i64, width as i64 - 1);
                         unsafe {
-                            let v_dst = i * new_stride + j * COMPONENTS;
-                            let v_src = y * old_stride + x * COMPONENTS;
-                            for i in 0..COMPONENTS {
+                            let v_dst = i * new_stride + j * CN;
+                            let v_src = y * old_stride + x * CN;
+                            for i in 0..CN {
                                 *padded_image.get_unchecked_mut(v_dst + i) =
                                     *image.get_unchecked(v_src + i);
                             }
@@ -140,9 +140,9 @@ where
                         let y = reflect_index_101(i as i64 - pad_h as i64, height as i64 - 1);
                         let x = reflect_index_101(j as i64 - pad_w as i64, width as i64 - 1);
                         unsafe {
-                            let v_dst = i * new_stride + j * COMPONENTS;
-                            let v_src = y * old_stride + x * COMPONENTS;
-                            for i in 0..COMPONENTS {
+                            let v_dst = i * new_stride + j * CN;
+                            let v_src = y * old_stride + x * CN;
+                            for i in 0..CN {
                                 *padded_image.get_unchecked_mut(v_dst + i) =
                                     *image.get_unchecked(v_src + i);
                             }
@@ -156,8 +156,8 @@ where
                 for i in ranges.0.clone() {
                     for j in ranges.1.clone() {
                         unsafe {
-                            let v_dst = i * new_stride + j * COMPONENTS;
-                            for i in 0..COMPONENTS {
+                            let v_dst = i * new_stride + j * CN;
+                            for i in 0..CN {
                                 *padded_image.get_unchecked_mut(v_dst + i) = border_scalar[i].as_();
                             }
                         }
@@ -167,5 +167,5 @@ where
         }
     }
 
-    Arena::new(padded_image, new_width, new_height, pad_w, pad_h)
+    Arena::new(padded_image, new_width, new_height, pad_w, pad_h, CN)
 }
