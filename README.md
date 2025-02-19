@@ -71,14 +71,14 @@ M3 Pro, NEON dilation RGB image 2731x4096 with specified kernel size
 
 | SE     | 9x9     | 15x15   | 21x21    | 41x41    | 61x61    |
 |--------|---------|---------|----------|----------|----------|
-| FM     | 16.81ms | 17.99ms | 24.53ms  | 69.00ms  | 142.76ms |
+| FM     | 6.82ms  | 13.02ms | 20.15ms  | 69.00ms  | 125.91ms |
 | OpenCV | 20.65ms | 54.43ms | 107.58ms | 418.66ms | 905.21ms |
 
 M3 Pro, NEON dilation RGBA image 2731x4096 with specified kernel size
 
 | SE     | 9x9     | 15x15   | 21x21    | 41x41    | 61x61    |
 |--------|---------|---------|----------|----------|----------|
-| FM     | 21.35ms | 27.20ms | 36.31ms  | 93.81ms  | 191.31ms |
+| FM     | 10.61ms | 16.94ms | 28.76ms  | 80.10ms  | 176.92ms |
 | OpenCV | 30.22ms | 72.63ms | 138.69ms | 555.51ms | 1.19s    |
 
 x86 SSE/AVX dilation RGB image 2731x4096 with specified kernel size

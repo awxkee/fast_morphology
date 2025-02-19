@@ -62,7 +62,7 @@ where
         let width = image_size.width;
 
         let op_type: MorphOp = OP_TYPE.into();
-        let stride = width;
+        let stride = width * arena.components;
 
         let decision = match op_type {
             MorphOp::Dilate => _mm_max_epu8,
@@ -80,7 +80,8 @@ where
         let dx = arena.pad_w as i32;
         let dy = arena.pad_h as i32;
 
-        let arena_stride = arena.width;
+        let total_width = arena.components * width;
+        let arena_stride = arena.width * arena.components;
 
         let offsets = analyzed_se
             .left_front
@@ -88,24 +89,25 @@ where
             .iter()
             .map(|&x| {
                 src.get_unchecked(
-                    ((x.y + dy + y as i32) as usize * arena_stride + (x.x + dx) as usize)..,
+                    ((x.y + dy + y as i32) as usize * arena_stride
+                        + (x.x + dx) as usize * arena.components)..,
                 )
             })
             .collect::<Vec<_>>();
 
-        let length = analyzed_se.left_front.element_offsets.iter().len();
+        let length = analyzed_se.left_front.element_offsets.len();
 
-        let mut _cx = 0usize;
+        let mut cx = 0usize;
 
-        while _cx + 128 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+        while cx + 128 < total_width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm256_loadu_si256(ptr0 as *const __m256i);
             let mut row1 = _mm256_loadu_si256(ptr0.add(32) as *const __m256i);
             let mut row2 = _mm256_loadu_si256(ptr0.add(64) as *const __m256i);
             let mut row3 = _mm256_loadu_si256(ptr0.add(96) as *const __m256i);
 
             for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr();
                 let new_row0 = _mm256_loadu_si256(ptr_d as *const __m256i);
                 let new_row1 = _mm256_loadu_si256(ptr_d.add(32) as *const __m256i);
                 let new_row2 = _mm256_loadu_si256(ptr_d.add(64) as *const __m256i);
@@ -116,109 +118,109 @@ where
                 row3 = decision_avx(row3, new_row3);
             }
 
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            let v_dst = dst.slice.as_ptr().add(y * stride + cx) as *mut u8;
 
             _mm256_storeu_si256(v_dst as *mut __m256i, row0);
             _mm256_storeu_si256(v_dst.add(32) as *mut __m256i, row1);
             _mm256_storeu_si256(v_dst.add(64) as *mut __m256i, row2);
             _mm256_storeu_si256(v_dst.add(96) as *mut __m256i, row3);
 
-            _cx += 128;
+            cx += 128;
         }
 
-        while _cx + 64 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+        while cx + 64 < total_width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm256_loadu_si256(ptr0 as *const __m256i);
             let mut row1 = _mm256_loadu_si256(ptr0.add(32) as *const __m256i);
 
             for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr();
                 let new_row0 = _mm256_loadu_si256(ptr_d as *const __m256i);
                 let new_row1 = _mm256_loadu_si256(ptr_d.add(32) as *const __m256i);
                 row0 = decision_avx(row0, new_row0);
                 row1 = decision_avx(row1, new_row1);
             }
 
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            let v_dst = dst.slice.as_ptr().add(y * stride + cx) as *mut u8;
 
             _mm256_storeu_si256(v_dst as *mut __m256i, row0);
             _mm256_storeu_si256(v_dst.add(32) as *mut __m256i, row1);
 
-            _cx += 64;
+            cx += 64;
         }
 
-        while _cx + 32 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+        while cx + 32 < total_width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm256_loadu_si256(ptr0 as *const __m256i);
 
             for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr();
                 let new_row0 = _mm256_loadu_si256(ptr_d as *const __m256i);
                 row0 = decision_avx(row0, new_row0);
             }
 
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            let v_dst = dst.slice.as_ptr().add(y * stride + cx) as *mut u8;
 
             _mm256_storeu_si256(v_dst as *mut __m256i, row0);
 
-            _cx += 32;
+            cx += 32;
         }
 
-        while _cx + 16 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+        while cx + 16 < total_width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
 
             for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr();
                 let new_row0 = _mm_loadu_si128(ptr_d as *const __m128i);
                 row0 = decision(row0, new_row0);
             }
 
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
+            let v_dst = dst.slice.as_ptr().add(y * stride + cx) as *mut u8;
             _mm_storeu_si128(v_dst as *mut __m128i, row0);
 
-            _cx += 16;
+            cx += 16;
         }
 
-        while _cx + 8 < width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr();
+        while cx + 8 < total_width {
+            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm_loadu_si64(ptr0);
 
             for i in 1..length {
-                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr();
+                let ptr_d = (*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr();
                 let new_row0 = _mm_loadu_si64(ptr_d);
                 row0 = decision(row0, new_row0);
             }
 
-            let v_dst = dst.slice.as_ptr().add(y * stride + _cx) as *mut u8;
-            std::ptr::copy_nonoverlapping(&row0 as *const _ as *const u8, v_dst, 8);
+            let v_dst = dst.slice.as_ptr().add(y * stride + cx) as *mut u8;
+            _mm_storeu_si64(v_dst, row0);
 
-            _cx += 8;
+            cx += 8;
         }
 
-        for x in (_cx..width.saturating_sub(4)).step_by(4) {
-            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
-            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(x + 1);
-            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(x + 2);
-            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(x + 3);
+        while cx + 4 < total_width {
+            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(cx);
+            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 1);
+            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 2);
+            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 3);
 
             for i in 1..length {
-                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
-                k1 = k1.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 1));
-                k2 = k2.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 2));
-                k3 = k3.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x + 3));
+                k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx));
+                k1 = k1.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx + 1));
+                k2 = k2.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx + 2));
+                k3 = k3.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx + 3));
             }
 
-            let dst_offset = y * stride + x;
+            let dst_offset = y * stride + cx;
 
             dst.write(dst_offset, k0);
             dst.write(dst_offset + 1, k1);
             dst.write(dst_offset + 2, k2);
             dst.write(dst_offset + 3, k3);
-            _cx = x;
+            cx += 4;
         }
 
-        for x in _cx..width {
+        for x in cx..total_width {
             let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
 
             for i in 1..length {

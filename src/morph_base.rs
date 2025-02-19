@@ -33,6 +33,7 @@ pub trait MorphNativeOp<T> {
 }
 
 impl MorphNativeOp<u8> for u8 {
+    #[inline(always)]
     fn op<const OP: u8>(&self, other: u8) -> u8 {
         let morph_op: MorphOp = OP.into();
         match morph_op {
@@ -43,6 +44,7 @@ impl MorphNativeOp<u8> for u8 {
 }
 
 impl MorphNativeOp<u16> for u16 {
+    #[inline(always)]
     fn op<const OP: u8>(&self, other: u16) -> u16 {
         let morph_op: MorphOp = OP.into();
         match morph_op {
@@ -53,6 +55,7 @@ impl MorphNativeOp<u16> for u16 {
 }
 
 impl MorphNativeOp<f32> for f32 {
+    #[inline(always)]
     fn op<const OP: u8>(&self, other: f32) -> f32 {
         let morph_op: MorphOp = OP.into();
         match morph_op {

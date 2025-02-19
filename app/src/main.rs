@@ -1,10 +1,15 @@
-use fast_morphology::{dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, morphology_rgba, BorderMode, ImageSize, KernelShape, MorphExOp, MorphScalar, MorphologyThreadingPolicy};
+use fast_morphology::{
+    dilate, dilate_rgb, dilate_rgba, erode, erode_rgba, morphology_image, morphology_rgba,
+    BorderMode, ImageSize, KernelShape, MorphExOp, MorphScalar, MorphologyThreadingPolicy,
+};
 use image::{DynamicImage, EncodableLayout, GenericImageView, ImageReader};
 use opencv::core::{
-    Mat, MatTrait, MatTraitConstManual, Point, Scalar, BORDER_REPLICATE, CV_8U, CV_8UC3,
+    Mat, MatTrait, MatTraitConst, MatTraitConstManual, Point, Scalar, Size, Vector,
+    BORDER_REPLICATE, CV_8U, CV_8UC3,
 };
+use opencv::imgcodecs::{imread, imwrite, IMREAD_COLOR};
 use opencv::imgproc;
-use opencv::imgproc::{MORPH_BLACKHAT, MORPH_TOPHAT};
+use opencv::imgproc::{INTER_AREA, MORPH_BLACKHAT, MORPH_TOPHAT};
 use std::time::Instant;
 
 fn circle_se(radius: usize) -> Vec<u8> {
@@ -64,7 +69,7 @@ fn gaussian_kernel(size: usize, sigma: f32) -> Vec<Vec<f32>> {
 }
 
 fn main() {
-    let radius_size = 5;
+    let radius_size = 15;
     let mut structuring_element = circle_se(radius_size);
 
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
@@ -171,7 +176,7 @@ fn main() {
     morphology_rgba(
         &rgba_image,
         &mut dst,
-        MorphExOp::TopHat,
+        MorphExOp::Dilate,
         image_size,
         &structuring_element,
         KernelShape::new(se_size, se_size),

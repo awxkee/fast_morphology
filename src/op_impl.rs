@@ -36,10 +36,10 @@ use crate::se_scan::scan_se;
 use crate::structuring_element::KernelShape;
 use crate::unsafe_slice::UnsafeSlice;
 use crate::{ImageSize, MorphologyThreadingPolicy};
-use std::sync::Arc;
 use num_traits::AsPrimitive;
+use std::sync::Arc;
 
-pub(crate) unsafe fn make_morphology<T, const OP_TYPE: u8>(
+pub(crate) fn make_morphology<T, const OP_TYPE: u8, const CN: usize>(
     src: &[T],
     dst: &mut [T],
     image_size: ImageSize,
@@ -53,86 +53,88 @@ where
     T: Copy + Default + 'static + Send + Sync + MorphNativeOp<T> + Row2DFilter<T>,
     f64: AsPrimitive<T>,
 {
-    if src.len() != dst.len() {
-        return Err("Source slice size and destination must match"
-            .parse()
-            .unwrap());
-    }
-
-    let kernel_width = structuring_element_size.width;
-    let kernel_height = structuring_element_size.height;
-    if kernel_height * kernel_width != structuring_element.len() {
-        return Err(format!(
-            "Structuring element expected to be {} but it was {}",
-            kernel_height * kernel_width,
-            structuring_element.len()
-        ));
-    }
-
-    let width = image_size.width;
-    let height = image_size.height;
-
-    if src.len() != width * height {
-        return Err(format!(
-            "Image size expected to be {} but it was {}",
-            width * height,
-            src.len()
-        ));
-    }
-
-    let analyzed_se = scan_se(structuring_element, structuring_element_size);
-
-    if analyzed_se.is_empty {
-        for (src, dst) in src.iter().zip(dst.iter_mut()) {
-            *dst = *src;
+    unsafe {
+        if src.len() != dst.len() {
+            return Err("Source slice size and destination must match"
+                .parse()
+                .unwrap());
         }
-        return Ok(());
-    }
 
-    let op_type: MorphOp = OP_TYPE.into();
+        let kernel_width = structuring_element_size.width;
+        let kernel_height = structuring_element_size.height;
+        if kernel_height * kernel_width != structuring_element.len() {
+            return Err(format!(
+                "Structuring element expected to be {} but it was {}",
+                kernel_height * kernel_width,
+                structuring_element.len()
+            ));
+        }
 
-    let filter = Arc::new(T::get_filter(op_type));
+        let width = image_size.width;
+        let height = image_size.height;
 
-    let arena = make_arena::<T, 1>(
-        src,
-        width as u32,
-        height as u32,
-        structuring_element_size,
-        border_mode,
-        border_constant,
-    );
-    let arena_arc = Arc::new(arena);
+        if src.len() != width * height * CN {
+            return Err(format!(
+                "Image size expected to be {} but it was {}",
+                width * height,
+                src.len()
+            ));
+        }
 
-    if let Some(pool) = threading_policy.get_pool(image_size) {
-        pool.scope(|scope| {
-            let unsafe_slice = UnsafeSlice::new(dst);
+        let analyzed_se = scan_se(structuring_element, structuring_element_size);
 
-            for y in 0..height {
-                let cloned_se = analyzed_se.clone();
-                let cloned_filter = filter.clone();
-                let arena_clone = arena_arc.clone();
-                scope.spawn(move |_| {
-                    cloned_filter.dispatch_row(
-                        &arena_clone,
-                        &unsafe_slice,
-                        image_size,
-                        cloned_se,
-                        y,
-                    );
-                });
+        if analyzed_se.is_empty {
+            for (src, dst) in src.iter().zip(dst.iter_mut()) {
+                *dst = *src;
             }
-        })
-    } else {
-        for y in 0..height {
-            let unsafe_slice = UnsafeSlice::new(dst);
-            let arena_clone = arena_arc.clone();
-            filter.dispatch_row(
-                &arena_clone,
-                &unsafe_slice,
-                image_size,
-                analyzed_se.clone(),
-                y,
-            );
+            return Ok(());
+        }
+
+        let op_type: MorphOp = OP_TYPE.into();
+
+        let filter = Arc::new(T::get_filter(op_type));
+
+        let arena = make_arena::<T, CN>(
+            src,
+            width as u32,
+            height as u32,
+            structuring_element_size,
+            border_mode,
+            border_constant,
+        );
+        let arena_arc = Arc::new(arena);
+
+        if let Some(pool) = threading_policy.get_pool(image_size) {
+            pool.scope(|scope| {
+                let unsafe_slice = UnsafeSlice::new(dst);
+
+                for y in 0..height {
+                    let cloned_se = analyzed_se.clone();
+                    let cloned_filter = filter.clone();
+                    let arena_clone = arena_arc.clone();
+                    scope.spawn(move |_| {
+                        cloned_filter.dispatch_row(
+                            &arena_clone,
+                            &unsafe_slice,
+                            image_size,
+                            cloned_se,
+                            y,
+                        );
+                    });
+                }
+            })
+        } else {
+            for y in 0..height {
+                let unsafe_slice = UnsafeSlice::new(dst);
+                let arena_clone = arena_arc.clone();
+                filter.dispatch_row(
+                    &arena_clone,
+                    &unsafe_slice,
+                    image_size,
+                    analyzed_se.clone(),
+                    y,
+                );
+            }
         }
     }
 

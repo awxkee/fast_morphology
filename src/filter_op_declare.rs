@@ -38,6 +38,7 @@ pub struct Arena<T> {
     pub height: usize,
     pub pad_w: usize,
     pub pad_h: usize,
+    pub components: usize,
 }
 
 impl<T> Arena<T> {
@@ -47,6 +48,7 @@ impl<T> Arena<T> {
         arena_height: usize,
         arena_pad_w: usize,
         arena_pad_h: usize,
+        components: usize,
     ) -> Arena<T> {
         Arena {
             arena,
@@ -54,6 +56,7 @@ impl<T> Arena<T> {
             height: arena_height,
             pad_w: arena_pad_w,
             pad_h: arena_pad_h,
+            components,
         }
     }
 }

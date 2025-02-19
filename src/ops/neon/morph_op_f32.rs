@@ -61,7 +61,7 @@ where
         let width = image_size.width;
 
         let op_type: MorphOp = OP_TYPE.into();
-        let stride = width;
+        let stride = width * arena.components;
 
         let decision = match op_type {
             MorphOp::Dilate => vmaxq_f32,
@@ -79,7 +79,7 @@ where
         let dx = arena.pad_w as i32;
         let dy = arena.pad_h as i32;
 
-        let arena_stride = arena.width;
+        let arena_stride = arena.width * arena.components;
 
         let offsets = analyzed_se
             .left_front
@@ -87,74 +87,76 @@ where
             .iter()
             .map(|&x| {
                 src.get_unchecked(
-                    ((x.y + dy + y as i32) as usize * arena_stride + (x.x + dx) as usize)..,
+                    ((x.y + dy + y as i32) as usize * arena_stride
+                        + (x.x + dx) as usize * arena.components)..,
                 )
             })
             .collect::<Vec<_>>();
 
-        let length = analyzed_se.left_front.element_offsets.iter().len();
+        let total_width = width * arena.components;
+        let length = analyzed_se.left_front.element_offsets.len();
 
-        let mut _cx = 0usize;
+        let mut cx = 0usize;
 
-        while _cx + 16 < width {
-            let mut rows = vld1q_f32_x4((*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr());
+        while cx + 16 < total_width {
+            let mut rows = vld1q_f32_x4((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_rows =
-                    vld1q_f32_x4((*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr());
+                    vld1q_f32_x4((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
                 rows.0 = decision(rows.0, new_rows.0);
                 rows.1 = decision(rows.1, new_rows.1);
                 rows.2 = decision(rows.2, new_rows.2);
                 rows.3 = decision(rows.3, new_rows.3);
             }
 
-            vst1q_f32_x4(dst.slice.as_ptr().add(y * stride + _cx) as *mut f32, rows);
+            vst1q_f32_x4(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
 
-            _cx += 16;
+            cx += 16;
         }
 
-        while _cx + 8 < width {
-            let mut rows = vld1q_f32_x2((*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr());
+        while cx + 8 < total_width {
+            let mut rows = vld1q_f32_x2((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_rows =
-                    vld1q_f32_x2((*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr());
+                    vld1q_f32_x2((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
                 rows.0 = decision(rows.0, new_rows.0);
                 rows.1 = decision(rows.1, new_rows.1);
             }
 
-            vst1q_f32_x2(dst.slice.as_ptr().add(y * stride + _cx) as *mut f32, rows);
+            vst1q_f32_x2(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
 
-            _cx += 8;
+            cx += 8;
         }
 
-        while _cx + 4 < width {
-            let mut rows = vld1q_f32((*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr());
+        while cx + 4 < total_width {
+            let mut rows = vld1q_f32((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
-                let new_row = vld1q_f32((*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr());
+                let new_row = vld1q_f32((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
                 rows = decision(rows, new_row);
             }
 
-            vst1q_f32(dst.slice.as_ptr().add(y * stride + _cx) as *mut f32, rows);
+            vst1q_f32(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
 
-            _cx += 4;
+            cx += 4;
         }
 
-        while _cx + 2 < width {
-            let mut rows = vld1_f32((*offsets.get_unchecked(0).get_unchecked(_cx..)).as_ptr());
+        while cx + 2 < total_width {
+            let mut rows = vld1_f32((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
-                let new_row = vld1_f32((*offsets.get_unchecked(i)).get_unchecked(_cx..).as_ptr());
+                let new_row = vld1_f32((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
                 rows = decision_half(rows, new_row);
             }
 
-            vst1_f32(dst.slice.as_ptr().add(y * stride + _cx) as *mut f32, rows);
+            vst1_f32(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
 
-            _cx += 2;
+            cx += 2;
         }
 
-        for x in _cx..width {
+        for x in cx..total_width {
             let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
 
             for i in 1..length {
