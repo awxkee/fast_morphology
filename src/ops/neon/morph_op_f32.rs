@@ -46,6 +46,36 @@ impl<const OP_TYPE: u8> Default for MorphOpFilterNeon2DRowF32<OP_TYPE> {
     }
 }
 
+#[inline(always)]
+unsafe fn xvld1q_f32_x4(a: *const f32) -> float32x4x4_t {
+    let v0 = vld1q_f32(a);
+    let v1 = vld1q_f32(a.add(4));
+    let v2 = vld1q_f32(a.add(8));
+    let v3 = vld1q_f32(a.add(12));
+    float32x4x4_t(v0, v1, v2, v3)
+}
+
+#[inline(always)]
+unsafe fn xvld1q_f32_x2(a: *const f32) -> float32x4x2_t {
+    let v0 = vld1q_f32(a);
+    let v1 = vld1q_f32(a.add(4));
+    float32x4x2_t(v0, v1)
+}
+
+#[inline(always)]
+unsafe fn xvst1q_f32_x2(a: *mut f32, b: float32x4x2_t) {
+    vst1q_f32(a, b.0);
+    vst1q_f32(a.add(4), b.1);
+}
+
+#[inline(always)]
+unsafe fn xvst1q_f32_x4(a: *mut f32, b: float32x4x4_t) {
+    vst1q_f32(a, b.0);
+    vst1q_f32(a.add(4), b.1);
+    vst1q_f32(a.add(8), b.2);
+    vst1q_f32(a.add(12), b.3);
+}
+
 impl<T, const OP_TYPE: u8> MorthOpFilterFlat2DRow<T> for MorphOpFilterNeon2DRowF32<OP_TYPE>
 where
     T: Copy + 'static,
@@ -99,33 +129,33 @@ where
         let mut cx = 0usize;
 
         while cx + 16 < total_width {
-            let mut rows = vld1q_f32_x4((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
+            let mut rows = xvld1q_f32_x4((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_rows =
-                    vld1q_f32_x4((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
+                    xvld1q_f32_x4((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
                 rows.0 = decision(rows.0, new_rows.0);
                 rows.1 = decision(rows.1, new_rows.1);
                 rows.2 = decision(rows.2, new_rows.2);
                 rows.3 = decision(rows.3, new_rows.3);
             }
 
-            vst1q_f32_x4(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
+            xvst1q_f32_x4(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
 
             cx += 16;
         }
 
         while cx + 8 < total_width {
-            let mut rows = vld1q_f32_x2((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
+            let mut rows = xvld1q_f32_x2((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_rows =
-                    vld1q_f32_x2((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
+                    xvld1q_f32_x2((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
                 rows.0 = decision(rows.0, new_rows.0);
                 rows.1 = decision(rows.1, new_rows.1);
             }
 
-            vst1q_f32_x2(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
+            xvst1q_f32_x2(dst.slice.as_ptr().add(y * stride + cx) as *mut f32, rows);
 
             cx += 8;
         }
