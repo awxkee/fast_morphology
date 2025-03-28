@@ -318,7 +318,7 @@ fn exec_bench_rgba(c: &mut Criterion, size: usize) {
 pub fn criterion_benchmark(c: &mut Criterion) {
     opencv::core::set_use_opencl(false).expect("Failed to disable OpenCL");
     opencv::core::set_use_ipp(false).expect("Failed to disable IPP");
-    opencv::core::set_use_optimized(false).expect("Failed to disable opts");
+    opencv::core::set_use_optimized(true).expect("Failed to disable opts");
 
     exec_bench_rgb(c, 4);
     exec_bench_rgb(c, 7);
