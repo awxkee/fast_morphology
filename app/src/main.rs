@@ -176,7 +176,7 @@ fn main() {
     morphology_rgba(
         &rgba_image,
         &mut dst,
-        MorphExOp::Dilate,
+        MorphExOp::Closing,
         image_size,
         &structuring_element,
         KernelShape::new(se_size, se_size),
@@ -236,7 +236,7 @@ fn main() {
 
     let new_image = morphology_image(
         img,
-        MorphExOp::Gradient,
+        MorphExOp::TopHat,
         &structuring_element,
         KernelShape::new(se_size, se_size),
         BorderMode::default(),
