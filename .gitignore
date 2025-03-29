@@ -6,3 +6,5 @@
 target
 app/target
 dilated.jpg
+Cargo.lock
+./app/Cargo.lock

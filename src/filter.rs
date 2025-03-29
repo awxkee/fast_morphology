@@ -31,7 +31,7 @@ use crate::flat_se::AnalyzedSe;
 use crate::op_type::MorphOp;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use crate::ops::avx::{MorphOpFilterAvx2DRow, MorphOpFilterAvx2DRowF32, MorphOpFilterAvx2DRowU16};
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[cfg(target_arch = "aarch64")]
 use crate::ops::neon::{
     MorphOpFilterNeon2DRow, MorphOpFilterNeon2DRowF32, MorphOpFilterNeon2DRowU16,
 };
@@ -73,7 +73,7 @@ impl Row2DFilter<u8> for u8 {
                 MorphOp::Dilate => {
                     let mut _result: Box<dyn MorthOpFilterFlat2DRow<u8> + Sync + Send> =
                         Box::new(MorphFilterFlat2DRow::<{ MorphOp::Dilate as u8 }>::default());
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                    #[cfg(target_arch = "aarch64")]
                     {
                         _result = Box::new(
                             MorphOpFilterNeon2DRow::<{ MorphOp::Dilate as u8 }>::default(),
@@ -97,7 +97,7 @@ impl Row2DFilter<u8> for u8 {
                 MorphOp::Erode => {
                     let mut _result: Box<dyn MorthOpFilterFlat2DRow<u8> + Sync + Send> =
                         Box::new(MorphFilterFlat2DRow::<{ MorphOp::Erode as u8 }>::default());
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                    #[cfg(target_arch = "aarch64")]
                     {
                         _result =
                             Box::new(MorphOpFilterNeon2DRow::<{ MorphOp::Erode as u8 }>::default());
@@ -142,7 +142,7 @@ impl Row2DFilter<f32> for f32 {
                             );
                         }
                     }
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                    #[cfg(target_arch = "aarch64")]
                     {
                         _result = Box::new(
                             MorphOpFilterNeon2DRowF32::<{ MorphOp::Dilate as u8 }>::default(),
@@ -166,7 +166,7 @@ impl Row2DFilter<f32> for f32 {
                             );
                         }
                     }
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                    #[cfg(target_arch = "aarch64")]
                     {
                         _result = Box::new(
                             MorphOpFilterNeon2DRowF32::<{ MorphOp::Erode as u8 }>::default(),
@@ -199,7 +199,7 @@ impl Row2DFilter<u16> for u16 {
                             );
                         }
                     }
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                    #[cfg(target_arch = "aarch64")]
                     {
                         _result = Box::new(
                             MorphOpFilterNeon2DRowU16::<{ MorphOp::Dilate as u8 }>::default(),
@@ -223,7 +223,7 @@ impl Row2DFilter<u16> for u16 {
                             );
                         }
                     }
-                    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+                    #[cfg(target_arch = "aarch64")]
                     {
                         _result = Box::new(
                             MorphOpFilterNeon2DRowU16::<{ MorphOp::Erode as u8 }>::default(),

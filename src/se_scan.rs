@@ -47,8 +47,8 @@ pub(crate) unsafe fn scan_se(
             let item = *structuring_element.get_unchecked(y * kernel_height + x);
             if item != 0 {
                 left_front.push(ScanPoint::new(
-                    y as i32 - half_kernel_height,
                     x as i32 - half_kernel_width,
+                    y as i32 - half_kernel_height,
                 ));
             }
         }
