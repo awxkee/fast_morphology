@@ -101,8 +101,8 @@ where
             for ranges in filling_ranges.iter() {
                 for i in ranges.0.clone() {
                     for j in ranges.1.clone() {
-                        let y = (i as i64 - pad_h as i64).rem_euclid(height as i64 - 1) as usize;
-                        let x = (j as i64 - pad_w as i64).rem_euclid(width as i64 - 1) as usize;
+                        let y = (i as i64 - pad_h as i64).rem_euclid(height as i64) as usize;
+                        let x = (j as i64 - pad_w as i64).rem_euclid(width as i64) as usize;
                         unsafe {
                             let v_dst = i * new_stride + j * CN;
                             let v_src = y * old_stride + x * CN;
@@ -119,8 +119,8 @@ where
             for ranges in filling_ranges.iter() {
                 for i in ranges.0.clone() {
                     for j in ranges.1.clone() {
-                        let y = reflect_index(i as i64 - pad_h as i64, height as i64 - 1);
-                        let x = reflect_index(j as i64 - pad_w as i64, width as i64 - 1);
+                        let y = reflect_index(i as isize - pad_h as isize, height as isize);
+                        let x = reflect_index(j as isize - pad_w as isize, width as isize);
                         unsafe {
                             let v_dst = i * new_stride + j * CN;
                             let v_src = y * old_stride + x * CN;
@@ -137,8 +137,8 @@ where
             for ranges in filling_ranges.iter() {
                 for i in ranges.0.clone() {
                     for j in ranges.1.clone() {
-                        let y = reflect_index_101(i as i64 - pad_h as i64, height as i64 - 1);
-                        let x = reflect_index_101(j as i64 - pad_w as i64, width as i64 - 1);
+                        let y = reflect_index_101(i as isize - pad_h as isize, height as isize);
+                        let x = reflect_index_101(j as isize - pad_w as isize, width as isize);
                         unsafe {
                             let v_dst = i * new_stride + j * CN;
                             let v_src = y * old_stride + x * CN;

@@ -38,11 +38,14 @@ mod difference;
 #[cfg(feature = "image")]
 mod dynamic_image;
 mod filter;
+mod filter_1d;
+mod filter_1d_padding;
 mod filter_op_declare;
 mod flat_se;
 mod img_size;
 mod morph_base;
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+mod morph_error;
+#[cfg(target_arch = "aarch64")]
 mod neon;
 mod op;
 mod op_f32;
@@ -60,41 +63,21 @@ mod unsafe_slice;
 pub use border_mode::{BorderMode, MorphScalar};
 #[cfg(feature = "image")]
 pub use dynamic_image::*;
+pub use filter_1d::{morph_1d_f32, morph_1d_u16, morph_1d_u8};
 pub use img_size::ImageSize;
-pub use op::dilate;
-pub use op::dilate_gray_alpha;
-pub use op::dilate_rgb;
-pub use op::dilate_rgba;
-pub use op::erode;
-pub use op::erode_gray_alpha;
-pub use op::erode_rgb;
-pub use op::erode_rgba;
-pub use op::morphology;
-pub use op::morphology_gray_alpha;
-pub use op::morphology_rgb;
-pub use op::morphology_rgba;
-pub use op_f32::dilate_f32;
-pub use op_f32::dilate_gray_alpha_f32;
-pub use op_f32::dilate_rgb_f32;
-pub use op_f32::dilate_rgba_f32;
-pub use op_f32::erode_f32;
-pub use op_f32::erode_gray_alpha_f32;
-pub use op_f32::erode_rgb_f32;
-pub use op_f32::erode_rgba_f32;
-pub use op_f32::morphology_rgb_f32;
-pub use op_f32::morphology_rgba_f32;
+pub use op::{
+    dilate, dilate_gray_alpha, dilate_rgb, dilate_rgba, erode, erode_gray_alpha, erode_rgb,
+    erode_rgba, morphology, morphology_gray_alpha, morphology_rgb, morphology_rgba,
+};
+pub use op_f32::{
+    dilate_f32, dilate_gray_alpha_f32, dilate_rgb_f32, dilate_rgba_f32, erode_f32,
+    erode_gray_alpha_f32, erode_rgb_f32, erode_rgba_f32, morphology_rgb_f32, morphology_rgba_f32,
+};
 pub use op_type::MorphExOp;
-pub use op_u16::dilate_gray_alpha_u16;
-pub use op_u16::dilate_rgb_u16;
-pub use op_u16::dilate_rgba_u16;
-pub use op_u16::dilate_u16;
-pub use op_u16::erode_gray_alpha_u16;
-pub use op_u16::erode_rgb_u16;
-pub use op_u16::erode_rgba_u16;
-pub use op_u16::erode_u16;
-pub use op_u16::morphology_gray_alpha_u16;
-pub use op_u16::morphology_gray_u16;
-pub use op_u16::morphology_rgb_u16;
-pub use op_u16::morphology_rgba_u16;
+pub use op_u16::{
+    dilate_gray_alpha_u16, dilate_rgb_u16, dilate_rgba_u16, dilate_u16, erode_gray_alpha_u16,
+    erode_rgb_u16, erode_rgba_u16, erode_u16, morphology_gray_alpha_u16, morphology_gray_u16,
+    morphology_rgb_u16, morphology_rgba_u16,
+};
 pub use structuring_element::KernelShape;
 pub use thread_policy::MorphologyThreadingPolicy;

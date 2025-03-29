@@ -26,10 +26,12 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+mod morph_1d_f32;
 mod morph_op;
 mod morph_op_f32;
 mod morph_op_u16;
 
-pub use morph_op::MorphOpFilterNeon2DRow;
-pub use morph_op_f32::MorphOpFilterNeon2DRowF32;
-pub use morph_op_u16::MorphOpFilterNeon2DRowU16;
+pub(crate) use morph_1d_f32::morph_1d_neon_f32;
+pub(crate) use morph_op::MorphOpFilterNeon2DRow;
+pub(crate) use morph_op_f32::MorphOpFilterNeon2DRowF32;
+pub(crate) use morph_op_u16::MorphOpFilterNeon2DRowU16;

@@ -38,7 +38,7 @@ use std::arch::aarch64::*;
 use std::arch::arm::*;
 
 #[derive(Clone)]
-pub struct MorphOpFilterNeon2DRow<const OP_TYPE: u8> {}
+pub(crate) struct MorphOpFilterNeon2DRow<const OP_TYPE: u8> {}
 
 #[inline(always)]
 unsafe fn xvld1q_u8_x4(a: *const u8) -> uint8x16x4_t {

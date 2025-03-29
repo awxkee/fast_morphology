@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Radzivon Bartoshyk. All rights reserved.
+ * Copyright (c) Radzivon Bartoshyk 3/2025. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -26,14 +26,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub mod avx;
-mod filter_1d;
-mod morph_row_op;
-#[cfg(target_arch = "aarch64")]
-pub mod neon;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub mod sse;
 
-pub(crate) use filter_1d::{morph_1d_common, ScanMax, ScanMin};
-pub use morph_row_op::MorphFilterFlat2DRow;
+#[derive(Copy, Clone, Debug)]
+pub enum MorphError {
+    KernelSizeMustBeOdd,
+    SourceAndDestinationMustMatch,
+    SamplesMustBeMultipleOfChannels,
+}
+
+impl std::fmt::Display for MorphError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            MorphError::KernelSizeMustBeOdd => f.write_str("Kernel Size must not be odd"),
+            MorphError::SourceAndDestinationMustMatch => {
+                f.write_str("Source and destination must match")
+            }
+            MorphError::SamplesMustBeMultipleOfChannels => {
+                f.write_str("Samples must not be multiple of channels")
+            }
+        }
+    }
+}
+
+impl std::error::Error for MorphError {}

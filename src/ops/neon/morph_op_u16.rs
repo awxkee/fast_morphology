@@ -38,7 +38,7 @@ use std::arch::aarch64::*;
 use std::arch::arm::*;
 
 #[derive(Clone)]
-pub struct MorphOpFilterNeon2DRowU16<const OP_TYPE: u8> {}
+pub(crate) struct MorphOpFilterNeon2DRowU16<const OP_TYPE: u8> {}
 
 impl<const OP_TYPE: u8> Default for MorphOpFilterNeon2DRowU16<OP_TYPE> {
     fn default() -> Self {

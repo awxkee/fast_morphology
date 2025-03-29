@@ -28,7 +28,7 @@
  */
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use crate::avx::morph_gradient_avx;
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[cfg(target_arch = "aarch64")]
 use crate::neon::morph_gradient_neon;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use crate::sse::morph_gradient_sse;
@@ -48,19 +48,30 @@ where
     }
 }
 
+trait GradientPositive {
+    fn ensure_positive(self) -> Self;
+}
+
+impl GradientPositive for f32 {
+    #[inline(always)]
+    fn ensure_positive(self) -> Self {
+        self.max(0.)
+    }
+}
+
 fn make_morph_gradient<T>(dilation: &[T], erosion: &[T], dst: &mut [T])
 where
-    T: Sub<Output = T> + Default + Clone + Copy,
+    T: Sub<Output = T> + Default + Clone + Copy + GradientPositive,
 {
     for ((dilation, erosion), dst) in dilation.iter().zip(erosion.iter()).zip(dst.iter_mut()) {
-        *dst = *dilation - *erosion;
+        *dst = (*dilation - *erosion).ensure_positive();
     }
 }
 
 impl MorphGradient<u8> for u8 {
     fn morph_gradient(dilation: &[u8], erosion: &[u8], dst: &mut [u8]) {
         let mut _dispatcher: fn(&[u8], &[u8], &mut [u8]) = make_morph_gradient_sat;
-        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        #[cfg(target_arch = "aarch64")]
         {
             _dispatcher = morph_gradient_neon;
         }
