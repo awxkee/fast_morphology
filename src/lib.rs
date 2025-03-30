@@ -31,7 +31,7 @@ extern crate core;
 
 mod arena;
 mod arena_roi;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "avx"))]
 mod avx;
 mod border_mode;
 mod difference;
@@ -45,7 +45,7 @@ mod flat_se;
 mod img_size;
 mod morph_base;
 mod morph_error;
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", feature = "neon"))]
 mod neon;
 mod op;
 mod op_f32;
@@ -54,7 +54,7 @@ mod op_type;
 mod op_u16;
 mod ops;
 mod se_scan;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "sse"))]
 mod sse;
 mod structuring_element;
 mod thread_policy;

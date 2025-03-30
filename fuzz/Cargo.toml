@@ -1,0 +1,34 @@
+[package]
+name = "app-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.fast_morphology]
+path = ".."
+default-features = false
+
+[features]
+neon = ["fast_morphology/neon"]
+sse = ["fast_morphology/sse"]
+avx = ["fast_morphology/avx"]
+
+[[bin]]
+name = "dilation"
+path = "dilation/dilation.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dilation1d"
+path = "dilation1d/dilation1d.rs"
+test = false
+doc = false
+bench = false

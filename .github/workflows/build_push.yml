@@ -64,3 +64,29 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy -- -D warnings
+
+  fuzz_arm:
+    name: Fuzzing ARM
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        feature: [ neon ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo install cargo-fuzz
+      - run: cargo fuzz run dilation --no-default-features --features ${{ matrix.feature }} -- -max_total_time=10
+      - run: cargo fuzz run dilation1d --no-default-features --features ${{ matrix.feature }} -- -max_total_time=10
+
+  fuzz_x86_64:
+    name: Fuzzing x86_64
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        feature: [ sse, avx ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo install cargo-fuzz
+      - run: cargo fuzz run dilation --no-default-features --features ${{ matrix.feature }} -- -max_total_time=12
+      - run: cargo fuzz run dilation1d --no-default-features --features ${{ matrix.feature }} -- -max_total_time=5
