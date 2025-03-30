@@ -26,11 +26,11 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "avx"))]
 use crate::avx::morph_gradient_avx;
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", feature = "neon"))]
 use crate::neon::morph_gradient_neon;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "sse"))]
 use crate::sse::morph_gradient_sse;
 use num_traits::SaturatingSub;
 use std::ops::Sub;
@@ -71,15 +71,17 @@ where
 impl MorphGradient<u8> for u8 {
     fn morph_gradient(dilation: &[u8], erosion: &[u8], dst: &mut [u8]) {
         let mut _dispatcher: fn(&[u8], &[u8], &mut [u8]) = make_morph_gradient_sat;
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             _dispatcher = morph_gradient_neon;
         }
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
+            #[cfg(feature = "sse")]
             if std::arch::is_x86_feature_detected!("sse4.1") {
                 _dispatcher = morph_gradient_sse;
             }
+            #[cfg(feature = "avx")]
             if std::arch::is_x86_feature_detected!("avx2") {
                 _dispatcher = morph_gradient_avx;
             }

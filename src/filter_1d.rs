@@ -86,12 +86,12 @@ impl Filter1DDelegate<f32> for f32 {
         pad: usize,
         points: &[ScanPoint],
     ) {
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(all(target_arch = "aarch64", feature = "neon"))]
         {
             use crate::ops::neon::morph_1d_neon_f32;
             morph_1d_neon_f32::<N, DILATE>(src, dst, pad, points);
         }
-        #[cfg(not(target_arch = "aarch64"))]
+        #[cfg(not(all(target_arch = "aarch64", feature = "neon")))]
         {
             morph_1d_common::<f32, N, DILATE>(src, dst, pad, points);
         }

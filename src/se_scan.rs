@@ -42,17 +42,19 @@ pub(crate) unsafe fn scan_se(
     let half_kernel_width = kernel_width as i32 / 2;
     let half_kernel_height = kernel_height as i32 / 2;
 
-    for y in 0..kernel_height {
-        for x in 0..kernel_width {
-            let item = *structuring_element.get_unchecked(y * kernel_height + x);
-            if item != 0 {
-                left_front.push(ScanPoint::new(
-                    x as i32 - half_kernel_width,
-                    y as i32 - half_kernel_height,
-                ));
+    structuring_element
+        .chunks_exact(kernel_width)
+        .enumerate()
+        .for_each(|(y, row)| {
+            for (x, &element) in row.iter().enumerate() {
+                if element != 0 {
+                    left_front.push(ScanPoint::new(
+                        x as i32 - half_kernel_width,
+                        y as i32 - half_kernel_height,
+                    ));
+                }
             }
-        }
-    }
+        });
 
     let iv_left: Vec<ScanPoint> = left_front.to_vec();
 

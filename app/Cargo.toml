@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 image = "0.25.2"
-fast_morphology = {path = "../", features = ["image"]}
+fast_morphology = {path = "../", features = ["image", "neon"], default-features = false}
 imageproc = "0.25.0"
 opencv = {version = "0.93.0", features = ["imgproc", "clang-runtime"]}
 
