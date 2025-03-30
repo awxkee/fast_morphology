@@ -25,3 +25,10 @@ path = "dilation/dilation.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "dilation1d"
+path = "dilation1d/dilation1d.rs"
+test = false
+doc = false
+bench = false

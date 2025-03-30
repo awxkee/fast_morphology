@@ -50,7 +50,7 @@ fn fuzz_2d_rgb(
     morphology_rgb(
         &src,
         &mut dst,
-        MorphExOp::Closing,
+        MorphExOp::Dilate,
         ImageSize::new(width, height),
         &se_element,
         KernelShape::new(kernel_width, kernel_height),

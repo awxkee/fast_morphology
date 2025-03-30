@@ -259,8 +259,8 @@ where
 pub fn morph_1d_f32(
     src: &[f32],
     dst: &mut [f32],
-    kernel: &[u8],
     op: MorphExOp,
+    kernel: &[u8],
     border_mode: BorderMode,
     morph_scalar: MorphScalar,
 ) -> Result<(), MorphError> {
@@ -270,8 +270,8 @@ pub fn morph_1d_f32(
 pub fn morph_1d_u16(
     src: &[u16],
     dst: &mut [u16],
-    kernel: &[u8],
     op: MorphExOp,
+    kernel: &[u8],
     border_mode: BorderMode,
     morph_scalar: MorphScalar,
 ) -> Result<(), MorphError> {
@@ -281,8 +281,8 @@ pub fn morph_1d_u16(
 pub fn morph_1d_u8(
     src: &[u8],
     dst: &mut [u8],
-    kernel: &[u8],
     op: MorphExOp,
+    kernel: &[u8],
     border_mode: BorderMode,
     morph_scalar: MorphScalar,
 ) -> Result<(), MorphError> {
@@ -304,8 +304,8 @@ mod tests {
         morph_1d_f32(
             &data,
             &mut dst,
-            &kernel,
             MorphExOp::Dilate,
+            &kernel,
             BorderMode::Reflect,
             MorphScalar::new(0., 0., 0., 0.),
         )
@@ -326,8 +326,8 @@ mod tests {
         morph_1d_f32(
             &data,
             &mut dst,
-            &kernel,
             MorphExOp::Erode,
+            &kernel,
             BorderMode::Reflect,
             MorphScalar::new(0., 0., 0., 0.),
         )
