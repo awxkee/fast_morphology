@@ -90,12 +90,14 @@ where
             })
             .collect::<Vec<_>>();
 
+        let off0 = offsets.get_unchecked(0);
+
         let length = analyzed_se.left_front.element_offsets.iter().len();
 
         let mut cx = 0usize;
 
         while cx + 32 < total_width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
+            let ptr0 = (*off0.get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
             let mut row1 = _mm_loadu_si128(ptr0.add(8) as *const __m128i);
             let mut row2 = _mm_loadu_si128(ptr0.add(16) as *const __m128i);
@@ -124,7 +126,7 @@ where
         }
 
         while cx + 16 < total_width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
+            let ptr0 = (*off0.get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
             let mut row1 = _mm_loadu_si128(ptr0.add(8) as *const __m128i);
 
@@ -145,7 +147,7 @@ where
         }
 
         while cx + 8 < total_width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
+            let ptr0 = (*off0.get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm_loadu_si128(ptr0 as *const __m128i);
 
             for i in 1..length {
@@ -161,7 +163,7 @@ where
         }
 
         while cx + 4 < total_width {
-            let ptr0 = (*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr();
+            let ptr0 = (*off0.get_unchecked(cx..)).as_ptr();
             let mut row0 = _mm_loadu_si64(ptr0 as *const u8);
 
             for i in 1..length {
@@ -177,7 +179,7 @@ where
         }
 
         for x in cx..total_width {
-            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
+            let mut k0 = *(*off0).get_unchecked(x);
 
             for i in 1..length {
                 k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));

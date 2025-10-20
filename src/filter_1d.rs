@@ -112,6 +112,12 @@ fn filter_1d_impl_base<
 where
     f64: AsPrimitive<T>,
 {
+    if src.is_empty() {
+        return Ok(());
+    }
+    if kernel.is_empty() {
+        return Ok(());
+    }
     if kernel.len() % 2 == 0 {
         return Err(MorphError::KernelSizeMustBeOdd);
     }
