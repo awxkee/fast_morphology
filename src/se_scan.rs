@@ -76,28 +76,6 @@ impl Add<ScanPoint> for ScanPoint {
     }
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct FilterBounds {
-    pub x: i32,
-    pub y: i32,
-    pub size: u16,
-}
-
-impl FilterBounds {
-    pub fn new(x: i32, y: i32, size: u16) -> FilterBounds {
-        FilterBounds { x, y, size }
-    }
-}
-
-impl Add<ScanPoint> for FilterBounds {
-    type Output = FilterBounds;
-
-    fn add(self, rhs: ScanPoint) -> Self::Output {
-        FilterBounds::new(self.x + rhs.x, self.y + rhs.y, self.size)
-    }
-}
-
 impl ScanPoint {
     pub fn new(x: i32, y: i32) -> ScanPoint {
         ScanPoint { x, y }

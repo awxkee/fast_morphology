@@ -105,7 +105,7 @@ where
 
         let src: &Vec<u16> = std::mem::transmute(&arena.arena);
         let dst: &UnsafeSlice<u16> = std::mem::transmute(dst);
-        
+
         let dx = arena.pad_w as i32;
         let dy = arena.pad_h as i32;
 
