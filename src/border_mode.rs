@@ -98,7 +98,7 @@ impl Index<usize> for MorphScalar {
             2 => &self.v2,
             3 => &self.v3,
             _ => {
-                panic!("Index out of bounds: {}", index);
+                unimplemented!("Index out of bounds: {index}");
             }
         }
     }

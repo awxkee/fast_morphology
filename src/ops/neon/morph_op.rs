@@ -126,10 +126,12 @@ where
 
         let length = analyzed_se.left_front.element_offsets.len();
 
+        let off0 = offsets.get_unchecked(0);
+
         let mut cx = 0usize;
 
         while cx + 64 < total_width {
-            let mut rows = xvld1q_u8_x4((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
+            let mut rows = xvld1q_u8_x4((*off0.get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_rows =
@@ -146,7 +148,7 @@ where
         }
 
         while cx + 32 < total_width {
-            let mut rows = xvld1q_u8_x2((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
+            let mut rows = xvld1q_u8_x2((*off0.get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_rows =
@@ -161,7 +163,7 @@ where
         }
 
         while cx + 16 < total_width {
-            let mut rows = vld1q_u8((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
+            let mut rows = vld1q_u8((*off0.get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_row = vld1q_u8((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
@@ -174,7 +176,7 @@ where
         }
 
         while cx + 8 < total_width {
-            let mut rows = vld1_u8((*offsets.get_unchecked(0).get_unchecked(cx..)).as_ptr());
+            let mut rows = vld1_u8((*off0.get_unchecked(cx..)).as_ptr());
 
             for i in 1..length {
                 let new_row = vld1_u8((*offsets.get_unchecked(i)).get_unchecked(cx..).as_ptr());
@@ -187,10 +189,10 @@ where
         }
 
         while cx + 4 < total_width {
-            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(cx);
-            let mut k1 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 1);
-            let mut k2 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 2);
-            let mut k3 = *(*offsets.get_unchecked(0)).get_unchecked(cx + 3);
+            let mut k0 = *(*off0).get_unchecked(cx);
+            let mut k1 = *(*off0).get_unchecked(cx + 1);
+            let mut k2 = *(*off0).get_unchecked(cx + 2);
+            let mut k3 = *(*off0).get_unchecked(cx + 3);
 
             for i in 1..length {
                 k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(cx));
@@ -209,7 +211,7 @@ where
         }
 
         for x in cx..total_width {
-            let mut k0 = *(*offsets.get_unchecked(0)).get_unchecked(x);
+            let mut k0 = *(*off0).get_unchecked(x);
 
             for i in 1..length {
                 k0 = k0.op::<OP_TYPE>(*(*offsets.get_unchecked(i)).get_unchecked(x));
