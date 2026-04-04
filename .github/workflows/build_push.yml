@@ -21,7 +21,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: rustup target add aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu i686-unknown-linux-gnu powerpc-unknown-linux-gnu
       - run: RUSTFLAGS="-C target-feature=+neon" cargo build --target aarch64-unknown-linux-gnu
@@ -36,7 +36,7 @@ jobs:
         platform: [ ubuntu-latest, macos-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test
 
@@ -44,7 +44,7 @@ jobs:
     name: Clippy x86 Stable
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --all-features -- -D warnings
 
@@ -52,7 +52,7 @@ jobs:
     name: Clippy x86 Nightly
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
       - run: rustup component add clippy
       - run: cargo clippy --all-features -- -D warnings
@@ -61,7 +61,7 @@ jobs:
     name: Clippy ARM
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy -- -D warnings
 
@@ -72,7 +72,7 @@ jobs:
       matrix:
         feature: [ neon ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo install cargo-fuzz
       - run: cargo fuzz run dilation --no-default-features --features ${{ matrix.feature }} -- -max_total_time=10
@@ -85,7 +85,7 @@ jobs:
       matrix:
         feature: [ sse, avx ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo install cargo-fuzz
       - run: cargo fuzz run dilation --no-default-features --features ${{ matrix.feature }} -- -max_total_time=12
